@@ -1,7 +1,6 @@
-package Server;
+package Game;
 
-import java.util.Random;
-import java.util.concurrent.SynchronousQueue;
+import Server.GeradorCodigo;
 
 public class GameState {
 

@@ -1,4 +1,4 @@
-package Server;
+package Game;
 
 public class Player {
     private int id;

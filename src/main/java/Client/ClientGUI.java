@@ -1,27 +1,27 @@
-package GUI;
+package Client;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class KahootGUI extends JFrame {
+public class ClientGUI extends JFrame {
 
-    public KahootGUI() {
+    public ClientGUI() {
 
-        //janela pricipal da GUI
+        //janela pricipal da Client
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setSize(400, 400);
         this.setLayout(new BorderLayout(10, 10));
-        //para ficar com espaçamento de 10 em toda a volta da GUI
+        //para ficar com espaçamento de 10 em toda a volta da Client
         getRootPane().setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        //Espaço para colocar a pergunta em questao, na parte superior da GUI
+        //Espaço para colocar a pergunta em questao, na parte superior da Client
         JLabel perguntaEspaco = new JLabel("Pergunta", SwingConstants.CENTER);
         this.add(perguntaEspaco, BorderLayout.NORTH);
 
         //Painel principal do centro
         JPanel painelCentral = new JPanel(new BorderLayout(10, 10));
 
-        //Painel central do lado esquerdo da GUI, com as opcoes da pergunta
+        //Painel central do lado esquerdo da Client, com as opcoes da pergunta
         JPanel painelOpcoes = new JPanel(new GridLayout(2, 2, 10, 10));
 
         JButton opcao1 = new JButton("Opcao 1");
@@ -37,7 +37,7 @@ public class KahootGUI extends JFrame {
         //Adiciona o pinel das opcoes ao painel principal
         painelCentral.add(painelOpcoes, BorderLayout.CENTER);
 
-        //Placar central do lado direito da GUI, com as pontuacoes
+        //Placar central do lado direito da Client, com as pontuacoes
         JPanel placarPontos = new JPanel(new GridLayout(3, 2, 10, 10));
 
         placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
@@ -63,10 +63,10 @@ public class KahootGUI extends JFrame {
         //Adiciona o painel das pontuacoes ao painel principal
         painelCentral.add(placarPontos, BorderLayout.EAST);
 
-        //Adiciona o painel central à GUI
+        //Adiciona o painel central à Client
         this.add(painelCentral, BorderLayout.CENTER);
 
-        //Adiciona no fim da GUI uma zona para colocar um cronometro com o tempo estabelecido pelo servidor
+        //Adiciona no fim da Client uma zona para colocar um cronometro com o tempo estabelecido pelo servidor
         JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
         JLabel tempo = new JLabel("Tempo: --", SwingConstants.LEFT);
         JLabel mensagem = new JLabel("Mensagem: --", SwingConstants.RIGHT);
@@ -74,7 +74,7 @@ public class KahootGUI extends JFrame {
         painelInferior.add(tempo, BorderLayout.WEST);
         painelInferior.add(mensagem, BorderLayout.EAST);
 
-        //Adiciona o painelInferior à GUI
+        //Adiciona o painelInferior à Client
         this.add(painelInferior, BorderLayout.SOUTH);
 
         this.setVisible(true);
