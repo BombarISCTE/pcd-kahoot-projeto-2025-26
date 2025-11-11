@@ -23,7 +23,7 @@ public class Client {
 
     }
 
-    public void runClient(){
+    public void runClient(){ //copiado dos slides do ano passado
         try{
             connectToServer();
             sendMessages();
