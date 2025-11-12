@@ -6,12 +6,12 @@ import com.google.gson.Gson;
 
 public class LerFicheiroQuestoes {
 
-    public static Questao[] lerQueestoes(String caminhoFicheiro) throws IOException {
+    public static Pergunta[] lerQueestoes(String caminhoFicheiro) throws IOException {
 
         Gson gson = new Gson();
 
         try(FileReader leitor = new FileReader(caminhoFicheiro)) {
-            Questao[] questoes = gson.fromJson(leitor, Questao[].class);
+            Pergunta[] questoes = gson.fromJson(leitor, Pergunta[].class);
             return questoes;
         }
 
