@@ -1,0 +1,3 @@
+ver as mensagens trocadas entre <Client> <-------------> <Server>
+package mensagens
+                    tipos de mensagens

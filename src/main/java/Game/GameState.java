@@ -1,18 +1,15 @@
-package Server;
-
-import java.util.Random;
-import java.util.concurrent.SynchronousQueue;
+package Game;
 
 public class GameState {
 
-    private String codigo;
+    private final String gameCode;
     private int numEquipas;
     private int numJogadoresEquipa;
 
     public GameState(int numEquipas, int numJogadoresEquipa) {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
-        this.codigo = GeradorCodigo.gerarCodigo();
+        gameCode = GeradorCodigo.gerarCodigo();
     }
 
     public int getNumEquipas() {
