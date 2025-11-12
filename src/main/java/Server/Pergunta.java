@@ -15,10 +15,10 @@ public class Pergunta {
     //o array de strings é mais simples de implementar e entender para este caso especifico, onde o numero de opcoes é fixo (4 opcoes)
     private String[] opcoes;
 
-    public Pergunta(String questao, int pontos, int opcaoCorreta, /*List<String> opcoes*/ String[] opcoes) {
+    public Pergunta(String questao, int opcaoCorreta, int pontos,/*List<String> opcoes*/ String[] opcoes) {
         this.questao = questao;
-        this.pontos = pontos;
         this.opcaoCorreta = opcaoCorreta;
+        this.pontos = pontos;
         this.opcoes = opcoes;
     }
 
@@ -26,12 +26,12 @@ public class Pergunta {
         return questao;
     }
 
-    public int getPontos() {
-        return pontos;
-    }
-
     public int getOpcaoCorreta() {
         return opcaoCorreta;
+    }
+
+    public int getPontos() {
+        return pontos;
     }
 
     public String[] getOpcoes() {
