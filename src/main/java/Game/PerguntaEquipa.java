@@ -1,4 +1,4 @@
-package Server;
+package Game;
 
 public class PerguntaEquipa extends Pergunta {
     public PerguntaEquipa(String questao, int pontos, int opcaoCorreta, String[] opcoes) {

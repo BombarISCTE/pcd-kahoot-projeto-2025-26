@@ -1,9 +1,9 @@
 [
     {
-        " question ": "O que é uma thread ?",
-        " points ": 5,
-        " correct ": 3,
-        " options ": [
+        "question": "O que é uma thread ?",
+        "points": 5,
+        "correct": 3,
+        "options": [
             " Processo ",
             " A p l i c a o ",
             " Programa ",
@@ -11,10 +11,10 @@
         ]
     },
     {
-        " question ": " Qual destas opções é um método bloqueante ?",
-        " points ": 3,
-        " correct ": 2,
-        " options ": [
+        "question": " Qual destas opções é um método bloqueante ?",
+        "points": 3,
+        "correct": 2,
+        "options": [
             " join ()",
             " sleep (<millis >)",
             " interrupted ()",

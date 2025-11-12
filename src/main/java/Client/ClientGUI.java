@@ -1,11 +1,19 @@
 package Client;
 
+import Game.Pergunta;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class ClientGUI extends JFrame {
 
-    public ClientGUI() {
+    private JLabel mensagemEspaco;
+    private JLabel perguntaEspaco;
+    private JButton[] opcoesBotoes = new JButton[4];
+    private Pergunta[] questoes;
+
+    public ClientGUI(Pergunta[] questoes) {
+        this.questoes = questoes;
 
         //janela pricipal da Client
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -15,7 +23,7 @@ public class ClientGUI extends JFrame {
         getRootPane().setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         //Espaço para colocar a pergunta em questao, na parte superior da Client
-        JLabel perguntaEspaco = new JLabel("Pergunta", SwingConstants.CENTER);
+        perguntaEspaco = new JLabel("", SwingConstants.CENTER);
         this.add(perguntaEspaco, BorderLayout.NORTH);
 
         //Painel principal do centro
@@ -24,15 +32,20 @@ public class ClientGUI extends JFrame {
         //Painel central do lado esquerdo da Client, com as opcoes da pergunta
         JPanel painelOpcoes = new JPanel(new GridLayout(2, 2, 10, 10));
 
-        JButton opcao1 = new JButton("Opcao 1");
-        JButton opcao2 = new JButton("Opcao 2");
-        JButton opcao3 = new JButton("Opcao 3");
-        JButton opcao4 = new JButton("Opcao 4");
+        for(int i = 0; i < opcoesBotoes.length; i++) {
+            opcoesBotoes[i] = new JButton();
+            painelOpcoes.add(opcoesBotoes[i]);
+        }
 
-        painelOpcoes.add(opcao1);
-        painelOpcoes.add(opcao2);
-        painelOpcoes.add(opcao3);
-        painelOpcoes.add(opcao4);
+//        JButton opcao1 = new JButton("Opcao 1");
+//        JButton opcao2 = new JButton("Opcao 2");
+//        JButton opcao3 = new JButton("Opcao 3");
+//        JButton opcao4 = new JButton("Opcao 4");
+//
+//        painelOpcoes.add(opcao1);
+//        painelOpcoes.add(opcao2);
+//        painelOpcoes.add(opcao3);
+//        painelOpcoes.add(opcao4);
 
         //Adiciona o pinel das opcoes ao painel principal
         painelCentral.add(painelOpcoes, BorderLayout.CENTER);
@@ -69,15 +82,32 @@ public class ClientGUI extends JFrame {
         //Adiciona no fim da Client uma zona para colocar um cronometro com o tempo estabelecido pelo servidor
         JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
         JLabel tempo = new JLabel("Tempo: --", SwingConstants.LEFT);
-        JLabel mensagem = new JLabel("Mensagem: --", SwingConstants.RIGHT);
+        mensagemEspaco = new JLabel("Mensagem: --", SwingConstants.RIGHT);
 
         painelInferior.add(tempo, BorderLayout.WEST);
-        painelInferior.add(mensagem, BorderLayout.EAST);
+        painelInferior.add(mensagemEspaco, BorderLayout.EAST);
 
         //Adiciona o painelInferior à Client
         this.add(painelInferior, BorderLayout.SOUTH);
 
         this.setVisible(true);
     }
+
+    private void atualizarPergunta(int indice){
+        if(indice >= 0 && indice < questoes.length){
+            Pergunta pergunta = questoes[indice];
+            perguntaEspaco.setText(pergunta.getQuestao());
+            String[] opcoes = pergunta.getOpcoes();
+            for(int i = 0; i < opcoesBotoes.length; i++){
+                opcoesBotoes[i].setText(opcoes[i]);
+            }
+        }
+        mensagemEspaco.setText("Fim das perguntas.");
+        return;
+    }
+
+//    public static void main(String[] args){
+//        ClientGUI gui = new ClientGUI();
+//    }
 
 }

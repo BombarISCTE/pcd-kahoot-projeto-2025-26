@@ -3,6 +3,7 @@ package Client;
 import Game.Team;
 
 public class clientKahoot {
+
     public static void main(String[] args) {
         if (args.length < 5) {
             System.out.println("Uso: java clientKahoot <IP> <PORT> <GameCode> <TeamCode> <Username>");
@@ -16,7 +17,7 @@ public class clientKahoot {
         Team team = new Team(Integer.parseInt(args[3]));
         String username = args[4];
 
-        Client client = new Client(ip, port, gameCode, team.getTeamCode(), username);
-        client.runClient();
+        //Client client = new Client(ip, port, gameCode, team, username);
+        //client.runClient();
     }
 }
