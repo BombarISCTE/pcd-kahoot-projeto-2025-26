@@ -22,10 +22,7 @@ public class Client {
     private final String username;
 
 
-
-
-    //usado na main clienteKahoot
-    public Client (String IP , int port, Game game, Team team, String username) throws IOException {
+    public Client (String IP , int port, Game game, Team team, String username) {
         this.IP = IP;
         this.port = port;
         this.game = game;
@@ -33,7 +30,6 @@ public class Client {
         this.username = username;
 
         connectToServer();
-
 
     }
 
@@ -53,11 +49,15 @@ public class Client {
     }
 
     // establish connection and I/O
-    private void connectToServer() throws IOException {
-        InetAddress address = InetAddress.getByName(IP);
-        socket = new Socket(address, port);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        out = new PrintWriter(socket.getOutputStream(), true);
+    private void connectToServer() {
+        try {
+            InetAddress address = InetAddress.getByName(IP);
+            socket = new Socket(address, port);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new PrintWriter(socket.getOutputStream(), true);
+        }catch (IOException e) {
+            System.err.println("Falha em estabelecer ligação ao servidor: " + IP + " - " + e.getMessage());
+        }
     }
 
     // example message exchange: send a greeting and read one response
@@ -103,10 +103,5 @@ public class Client {
         }
     }
 
-
-
-//    public static void main( String[] args){
-//        new Client().runClient();
-//    }
 
 }

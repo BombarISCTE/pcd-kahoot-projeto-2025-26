@@ -1,12 +1,12 @@
 package Server;
 
-import java.util.List;
-
-public class Questao {
+public class Pergunta {
 
     private String questao;
     private int pontos;
     private int opcaoCorreta;
+
+    private static final int MAX_TIMER = 30; //segundos
 
     //utilizar uma lista de strings para as opcoes pois é mais flexivel da ap ra adicionar mais opcoes se necessario ou remover, e é mais moderno e facil de usar:
     //um array de string é mais antigo e menos flexivel iriamos ter de ter sempre o mesmo numero de respostas possiveis
@@ -15,7 +15,7 @@ public class Questao {
     //o array de strings é mais simples de implementar e entender para este caso especifico, onde o numero de opcoes é fixo (4 opcoes)
     private String[] opcoes;
 
-    public Questao(String questao, int pontos, int opcaoCorreta, /*List<String> opcoes*/ String[] opcoes) {
+    public Pergunta(String questao, int pontos, int opcaoCorreta, /*List<String> opcoes*/ String[] opcoes) {
         this.questao = questao;
         this.pontos = pontos;
         this.opcaoCorreta = opcaoCorreta;
@@ -47,6 +47,9 @@ public class Questao {
             return true;
         }
         return false;
+    }
+    public int getMaxTimer() {
+        return MAX_TIMER;
     }
 
 

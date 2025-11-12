@@ -13,10 +13,10 @@ public class clientKahoot {
         int port = Integer.parseInt(args[1]);
         String gameCode = args[2];
         //String teamCode = args[3];
-        Team team = new Team(args[3]);
+        Team team = new Team(Integer.parseInt(args[3]));
         String username = args[4];
 
-        Client client = new Client(ip, port, gameCode, teamCode, username);
-        client.start();
+        Client client = new Client(ip, port, gameCode, team.getTeamCode(), username);
+        client.runClient();
     }
 }

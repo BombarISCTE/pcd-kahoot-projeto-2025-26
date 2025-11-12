@@ -50,7 +50,9 @@ public class Server {
 
             // TODO: lógica do jogo
 
-            clientSocket.close();
+            //in.close();
+            //out.close();
+            clientSocket.close(); //  --> geralmente fechar o socket fecha os streams associados
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
