@@ -64,8 +64,6 @@ public class Pergunta {
         return str.toString();
     }
 
-
-
     public static Pergunta[] lerPerguntas(String caminhoFicheiro) throws IOException {
         try (FileReader reader = new FileReader(caminhoFicheiro)) {
             return new Gson().fromJson(reader, Pergunta[].class);

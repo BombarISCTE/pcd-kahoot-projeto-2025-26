@@ -1,5 +1,6 @@
 package Client;
 
+import Game.Pergunta;
 import Game.Team;
 
 public class clientKahoot {
@@ -19,5 +20,12 @@ public class clientKahoot {
 
         //Client client = new Client(ip, port, gameCode, team, username);
         //client.runClient();
+
+        try{
+            Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/java/Game/FicheiroQuestoes.json");
+            ClientGUI gui = new ClientGUI(perguntas);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 }
