@@ -1,4 +1,4 @@
-package Server;
+package Game;
 
 import java.util.HashSet;
 import java.util.Random;

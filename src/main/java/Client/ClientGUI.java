@@ -1,6 +1,6 @@
 package Client;
 
-import Server.Pergunta;
+import Game.Pergunta;
 
 import javax.swing.*;
 import java.awt.*;
@@ -90,7 +90,6 @@ public class ClientGUI extends JFrame {
         //Adiciona o painelInferior à Client
         this.add(painelInferior, BorderLayout.SOUTH);
 
-        atualizarPergunta(0);
         this.setVisible(true);
     }
 
@@ -102,30 +101,13 @@ public class ClientGUI extends JFrame {
             for(int i = 0; i < opcoesBotoes.length; i++){
                 opcoesBotoes[i].setText(opcoes[i]);
             }
-        }else{
-            mensagemEspaco.setText("Fim das perguntas.");
-            return;
         }
+        mensagemEspaco.setText("Fim das perguntas.");
+        return;
     }
 
-    public static void main(String[] args) {
-        // 1. Criar dados "mock" (falsos) para o teste
-        String[] ops1 = {"Processo", "Aplicação", "Programa", "Processo Ligeiro"};
-        Pergunta p1 = new Pergunta("O que é uma thread?", 3, 5, ops1);
+//    public static void main(String[] args){
+//        ClientGUI gui = new ClientGUI();
+//    }
 
-        String[] ops2 = {"join()", "sleep(<millis>)", "interrupted()", "wait()"};
-        Pergunta p2 = new Pergunta("Qual destas opções não é um método bloqueante?", 2, 5, ops2);
-
-        // Array de perguntas para enviar à GUI
-        Pergunta[] mockQuestoes = {p1, p2};
-
-        // 2. Iniciar a GUI na thread de eventos do Swing (boa prática)
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                // Criar e exibir a GUI com os dados mock
-                new ClientGUI(mockQuestoes);
-            }
-        });
-    }
 }
