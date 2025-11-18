@@ -11,7 +11,7 @@ public class Game {
     private GameStatistics statistics;
 
     public Game (int numEquipas, int numJogadoresEquipa, int numPerguntas) {
-        this.gameState = new GameState(numEquipas, numJogadoresEquipa);
+        this.gameState = new GameState(numEquipas, numJogadoresEquipa, numPerguntas);
         this.statistics = new GameStatistics();
     }
 
