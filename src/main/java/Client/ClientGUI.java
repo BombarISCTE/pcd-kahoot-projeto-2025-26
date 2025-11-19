@@ -10,10 +10,10 @@ public class ClientGUI extends JFrame {
     private JLabel mensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
-    private Pergunta[] questoes;
+    private Pergunta[] perguntas;
 
-    public ClientGUI(Pergunta[] questoes) {
-        this.questoes = questoes;
+    public ClientGUI(Pergunta[] perguntas) {
+        this.perguntas = perguntas;
 
         //janela pricipal da Client
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -33,19 +33,9 @@ public class ClientGUI extends JFrame {
         JPanel painelOpcoes = new JPanel(new GridLayout(2, 2, 10, 10));
 
         for(int i = 0; i < opcoesBotoes.length; i++) {
-            opcoesBotoes[i] = new JButton();
+            opcoesBotoes[i] = new JButton("Opcao " + (i + 1));
             painelOpcoes.add(opcoesBotoes[i]);
         }
-
-//        JButton opcao1 = new JButton("Opcao 1");
-//        JButton opcao2 = new JButton("Opcao 2");
-//        JButton opcao3 = new JButton("Opcao 3");
-//        JButton opcao4 = new JButton("Opcao 4");
-//
-//        painelOpcoes.add(opcao1);
-//        painelOpcoes.add(opcao2);
-//        painelOpcoes.add(opcao3);
-//        painelOpcoes.add(opcao4);
 
         //Adiciona o pinel das opcoes ao painel principal
         painelCentral.add(painelOpcoes, BorderLayout.CENTER);
@@ -90,24 +80,23 @@ public class ClientGUI extends JFrame {
         //Adiciona o painelInferior à Client
         this.add(painelInferior, BorderLayout.SOUTH);
 
+        mostrarPergunta();
+
         this.setVisible(true);
     }
 
-    private void atualizarPergunta(int indice){
-        if(indice >= 0 && indice < questoes.length){
-            Pergunta pergunta = questoes[indice];
-            perguntaEspaco.setText(pergunta.getQuestao());
-            String[] opcoes = pergunta.getOpcoes();
-            for(int i = 0; i < opcoesBotoes.length; i++){
-                opcoesBotoes[i].setText(opcoes[i]);
-            }
+    private void mostrarPergunta(){
+        if(perguntas == null || perguntas.length == 0){
+            perguntaEspaco.setText("Nenhuma pergunta disponivel.");
+            return;
+        }
+        Pergunta pergunta = perguntas[0];
+        perguntaEspaco.setText(pergunta.getQuestao());
+        String[] opcoes = pergunta.getOpcoes();
+        for(int i = 0; i < opcoesBotoes.length; i++){
+            opcoesBotoes[i].setText(opcoes[i]);
         }
         mensagemEspaco.setText("Fim das perguntas.");
         return;
     }
-
-//    public static void main(String[] args){
-//        ClientGUI gui = new ClientGUI();
-//    }
-
 }
