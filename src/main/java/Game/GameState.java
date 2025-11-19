@@ -91,6 +91,44 @@ public class GameState {
         return true;
     }
 
+    public boolean registrarResposta(Player jogador, int opcaoEscolhida) {
+        if(respostasJogadores.containsKey(jogador)) {
+            return false;
+        }
+        respostasJogadores.put(jogador, opcaoEscolhida);
+        return true;
+    }
+
+    public boolean respostaCorreta(Player jogador) {
+        if(!respostasJogadores.containsKey(jogador)) {
+            return false;
+        }
+        Pergunta perguntaAtual = getPerguntaAtual();
+        int opcaoEscolhida = respostasJogadores.get(jogador);
+        return perguntaAtual.verificarResposta(opcaoEscolhida);
+    }
+
+    public boolean todasRespostasRecebidas(){
+        int totalJogadores = numEquipas * numJogadoresEquipa;
+        if(respostasJogadores.size() >= totalJogadores){
+            return true;
+        }
+        return false;
+    }
+
+    public boolean equipaRespondeu(int equipaID){
+        int count = 0;
+        for(Player jogador : jogadores[equipaID]){
+            if(respostasJogadores.containsKey(jogador)){
+                count++;
+            }
+        }
+        if(count == numJogadoresEquipa){
+            return true;
+        }
+        return false;
+    }
+
 
 
 }
