@@ -1,5 +1,7 @@
 package Game;
 
+import Utils.IdCodeGenerator;
+
 public class GameState {
 
     private final String gameCode;
@@ -9,7 +11,7 @@ public class GameState {
     public GameState(int numEquipas, int numJogadoresEquipa) {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
-        gameCode = GeradorCodigo.gerarCodigo();
+        gameCode = IdCodeGenerator.gerarCodigo();
     }
 
     public int getNumEquipas() {

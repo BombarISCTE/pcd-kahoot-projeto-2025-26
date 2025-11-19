@@ -6,7 +6,7 @@ public class PerguntaEquipa extends Pergunta {
     }
 
 
-    // neste tipo de perguntas, a cotacao das +erguntas de u,a equipa apenas serao decididas apos a rececao das
+    // neste tipo de perguntas, a cotacao das perguntas de uma equipa apenas serao decididas apos a rececao das
     // respostas de todos os membros da equipa ou quando o tempo expirar
 
 

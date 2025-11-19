@@ -1,18 +1,20 @@
-package Game;
+package Utils;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-public class Temporizador extends Thread {
+public class Timer extends Thread {
     private final int segundos;
+    private Instant start;
 
-    public Temporizador(int segundos) {
+    public Timer(int segundos) {
         this.segundos = segundos;
     }
 
     @Override
     public void run() {
         Instant start = Instant.now();
+        this.start = start;
 
         try {
             for (int i = segundos; i > 0; i--) {
@@ -27,13 +29,20 @@ public class Temporizador extends Thread {
         } catch (InterruptedException e) {
             Instant end = Instant.now();
             long millis = ChronoUnit.MILLIS.between(start, end);
-            System.out.println("Temporizador interrompido! Tempo decorrido: " + Math.round(millis / 1000.0) + "s");
+            System.out.println("Timer interrompido! Tempo decorrido: " + Math.round(millis / 1000.0) + "s");
             Thread.currentThread().interrupt();
         }
     }
+    public long getElapsedTime() {
+        if (start == null) {
+            throw new IllegalStateException("Timer ainda não foi iniciado.");
+        }
+        Instant now = Instant.now();
+        return Math.round(ChronoUnit.MILLIS.between(start, now)/1000.0);
+    }
 
     public static void main(String[] args) {
-        Temporizador t = new Temporizador(5); // exemplo com 5 segundos
+        Timer t = new Timer(5); // exemplo com 5 segundos
         t.start();
         try {
             t.join();

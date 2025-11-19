@@ -1,4 +1,4 @@
-package Game;
+package Utils;
 
 public class MyCountDownLatch {
     private int count;
@@ -23,6 +23,11 @@ public class MyCountDownLatch {
                 notifyAll(); // liberta todas as threads à espera
             }
         }
+    }
+
+    public synchronized void reset(int count) { //caso queira reutilizar o latch
+        if (count < 0) throw new IllegalArgumentException("count < 0");
+        this.count = count;
     }
 
     public synchronized int getCount() {

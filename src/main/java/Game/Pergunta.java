@@ -2,8 +2,7 @@ package Game;
 
 import com.google.gson.Gson;
 
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 
 public class Pergunta {
 
@@ -43,9 +42,6 @@ public class Pergunta {
         return options;
     }
 
-//    public List<String> getOptions() {
-//        return options;
-//    }
 
     public boolean verificarResposta(int opcaoEscolhida) {return correct == opcaoEscolhida;}
 
@@ -65,19 +61,68 @@ public class Pergunta {
     }
 
 
+    public static String convertTxtToJsonPath(String filePath) {
+        String[] pathParts = filePath.split("\\.");
+        StringBuilder newPath = new StringBuilder();
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            newPath.append(pathParts[i]);
+            if (i < pathParts.length - 2) {
+                newPath.append(".json");
+            }
+        }
+        newPath.append(".json");
+        return String.valueOf(newPath);
+    }
 
-    public static Pergunta[] lerPerguntas(String caminhoFicheiro) throws IOException {
-        try (FileReader reader = new FileReader(caminhoFicheiro)) {
+    public static Pergunta[] lerPerguntas(String filePath) throws IOException {
+        String newPath = convertTxtToJsonPath(filePath);
+        try (FileReader reader = new FileReader(newPath)) {
             return new Gson().fromJson(reader, Pergunta[].class);
         }
     }
+
 // todo trim Perguntas.txt e adequar e passar a .json
+
+    public static void txtTrimmer(String inputFilePath, String outputFilePath) throws IOException {
+        StringBuilder sb = new StringBuilder();
+
+        // 1. Ler tudo para uma única String
+        try (BufferedReader br = new BufferedReader(new FileReader(inputFilePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+        }
+        String json = sb.toString();
+
+        // 2. Limpar keys com espaços: "  question  " -> "question"
+        json = json.replaceAll("\"\\s*(.*?)\\s*\"\\s*:", "\"$1\":");
+
+        // 3. Limpar valores string: "  Resposta  " -> "Resposta"
+        json = json.replaceAll(":\\s*\"\\s*(.*?)\\s*\"", ": \"$1\"");
+
+        // 4. Limpar strings dentro de arrays: "   Valor   " -> "Valor"
+        json = json.replaceAll("\"\\s+(.*?)\\s+\"", "\"$1\"");
+
+        // 5. Guardar o JSON limpo
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
+            bw.write(json);
+        }
+    }
+
     public static void main(String[] args) {
-        // Caminho relativo: procura o ficheiro dentro do projeto
-        String caminhoFicheiro = "src/main/java/Game/FicheiroQuestoes.json";
+
+        String path = "src/main/java/Game/file.txt";
+        String jsonPath = convertTxtToJsonPath(path);
+
+        try{
+            txtTrimmer(path, jsonPath);
+        } catch (IOException e){
+            System.err.println("Erro ao trimar o ficheiro de perguntas: " + e.getMessage());
+        }
 
         try {
-            Pergunta[] perguntas = Pergunta.lerPerguntas(caminhoFicheiro);
+            Pergunta[] perguntas = Pergunta.lerPerguntas(jsonPath);
 
             System.out.println("Total de perguntas: " + perguntas.length + "\n");
 
