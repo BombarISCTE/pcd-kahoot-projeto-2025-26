@@ -64,8 +64,23 @@ public class Pergunta {
         return str.toString();
     }
 
-    public static Pergunta[] lerPerguntas(String caminhoFicheiro) throws IOException {
-        try (FileReader reader = new FileReader(caminhoFicheiro)) {
+
+    public static String convertTxtToJsonPath(String filePath) {
+        String[] pathParts = filePath.split("\\.");
+        StringBuilder newPath = new StringBuilder();
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            newPath.append(pathParts[i]);
+            if (i < pathParts.length - 2) {
+                newPath.append(".json");
+            }
+        }
+        newPath.append(".json");
+        return String.valueOf(newPath);
+    }
+
+    public static Pergunta[] lerPerguntas(String filePath) throws IOException {
+        String newPath = convertTxtToJsonPath(filePath);
+        try (FileReader reader = new FileReader(newPath)) {
             return new Gson().fromJson(reader, Pergunta[].class);
         }
     }

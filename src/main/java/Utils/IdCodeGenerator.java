@@ -1,4 +1,4 @@
-package Game;
+package Utils;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
 //Servidor deve ser capaz de gerar um código único que não esteja em utilização.
 //O servidor deve conseguir armazenar os códigos e descartá-los quando
 //não estão mais em utilização.
-public class GeradorCodigo {
+public class IdCodeGenerator {
 
     private static final Set<String> codigosUsados = new HashSet<String>();
 

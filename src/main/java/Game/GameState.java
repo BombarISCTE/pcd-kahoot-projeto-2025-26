@@ -22,7 +22,7 @@ public class GameState {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
 
-        gameCode = GeradorCodigo.gerarCodigo();
+        gameCode = IdCodeGenerator.gerarCodigo();
 
         this.equipas = new Team[numEquipas];
         this.jogadores = new Player[numEquipas][numJogadoresEquipa];
