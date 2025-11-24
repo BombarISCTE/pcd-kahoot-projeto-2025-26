@@ -1,5 +1,7 @@
 package Game;
 
+import Utils.IdCodeGenerator;
+
 import java.util.HashMap;
 
 public class GameState {
@@ -15,9 +17,6 @@ public class GameState {
     private Pergunta[] perguntas;
     private int indicePerguntaAtual = 0;
 
-    private HashMap<Player, Integer> respostasJogadores;
-
-
     public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas) {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
@@ -28,8 +27,6 @@ public class GameState {
         this.jogadores = new Player[numEquipas][numJogadoresEquipa];
 
         this.perguntas = new Pergunta[numEquipas];
-
-        this.respostasJogadores = new HashMap<>();
 
         for(int i = 0; i < numEquipas; i++) {
             equipas[i] = new Team("Equipa " + (i + 1), i + 1);
@@ -78,9 +75,6 @@ public class GameState {
         return indicePerguntaAtual >= perguntas.length;
     }
 
-    private void limparRespostas() {
-        respostasJogadores.clear();
-    }
 
     public boolean avancarProximaPergunta(){
         indicePerguntaAtual++;

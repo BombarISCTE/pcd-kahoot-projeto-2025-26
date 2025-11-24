@@ -72,7 +72,7 @@ public class ClientGUI extends JFrame {
         //Adiciona no fim da Client uma zona para colocar um cronometro com o tempo estabelecido pelo servidor
         JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
         JLabel tempo = new JLabel("Tempo: --", SwingConstants.LEFT);
-        mensagemEspaco = new JLabel("Mensagem: --", SwingConstants.RIGHT);
+        mensagemEspaco = new JLabel("Utils.Mensagem: --", SwingConstants.RIGHT);
 
         painelInferior.add(tempo, BorderLayout.WEST);
         painelInferior.add(mensagemEspaco, BorderLayout.EAST);

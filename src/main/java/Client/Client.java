@@ -2,18 +2,16 @@ package Client;
 
 import Game.*;
 import Server.Server;
+import Utils.Message;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 
 public class Client {
     private Socket socket;
-    private BufferedReader in;
-    private PrintWriter out;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
 
     private final String IP;
     private final int port;
@@ -37,7 +35,7 @@ public class Client {
         try{
             connectToServer();
             sendMessages();
-        } catch (IOException _){
+        } catch (IOException | ClassNotFoundException _){
             System.err.println("Failed to run client");
         } finally {
             try {
@@ -51,44 +49,47 @@ public class Client {
     // establish connection and I/O
     private void connectToServer() {
         try {
-            InetAddress address = InetAddress.getByName(IP);
-            socket = new Socket(address, port);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+            InetAddress address = InetAddress.getByName(null);
+            socket = new Socket(address, 8080);
+            out = new ObjectOutputStream(socket.getOutputStream());
+            out.flush();
+            in = new ObjectInputStream(socket.getInputStream());
         }catch (IOException e) {
             System.err.println("Falha em estabelecer ligação ao servidor: " + IP + " - " + e.getMessage());
         }
     }
 
     // example message exchange: send a greeting and read one response
-    private void sendMessages() throws IOException {
+    private void sendMessages() throws IOException, ClassNotFoundException {
         if (out == null || in == null) {
             throw new IOException("I/O streams not initialized");
         }
         // send a simple handshake / registration
-        out.println("HELLO " + username);
+        out.writeObject("HELLO " + username);
+        out.flush();
         // read one line response from server (non-blocking assumption depends on server)
-        String response = in.readLine();
+        Message response = (Message) in.readObject();
         if (response != null) {
             System.out.println("Server response: " + response);
         } else {
             System.err.println("Server closed connection or sent no response");
         }
 
-//        // optional follow-up message
-//        out.println("GOODBYE " + username);
+        // optional follow-up message
+        out.writeObject("GOODBYE " + username);
+        out.flush();
     }
 
-    public void sendMessage(String message) {
+    public void sendMessage(String message) throws IOException {
         if (out != null) {
-            out.println(message);
+            out.writeObject(message);
         } else {
             System.err.println("Output stream not initialized");
         }
     }
-    public String readMessage() throws IOException {
+    public Message readMessage() throws IOException, ClassNotFoundException {
         if (in != null) {
-            return in.readLine();
+            return (Message) in.readObject();
         } else {
             throw new IOException("Input stream not initialized");
         }
