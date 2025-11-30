@@ -1,8 +1,6 @@
 package Client;
 
 import Game.*;
-import Server.Server;
-import Utils.Message;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -68,12 +66,12 @@ public class Client {
         out.writeObject("HELLO " + username);
         out.flush();
         // read one line response from server (non-blocking assumption depends on server)
-        Message response = (Message) in.readObject();
-        if (response != null) {
-            System.out.println("Server response: " + response);
-        } else {
-            System.err.println("Server closed connection or sent no response");
-        }
+//        Message response = (Message) in.readObject();
+//        if (response != null) {
+//            System.out.println("Server response: " + response);
+//        } else {
+//            System.err.println("Server closed connection or sent no response");
+//        }
 
         // optional follow-up message
         out.writeObject("GOODBYE " + username);
@@ -87,13 +85,13 @@ public class Client {
             System.err.println("Output stream not initialized");
         }
     }
-    public Message readMessage() throws IOException, ClassNotFoundException {
-        if (in != null) {
-            return (Message) in.readObject();
-        } else {
-            throw new IOException("Input stream not initialized");
-        }
-    }
+//    public Message readMessage() throws IOException, ClassNotFoundException {
+//        if (in != null) {
+//            return (Message) in.readObject();
+//        } else {
+//            throw new IOException("Input stream not initialized");
+//        }
+//    }
     public void disconnect() {
         try {
             in.close();
