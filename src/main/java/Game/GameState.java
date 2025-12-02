@@ -59,6 +59,10 @@ public class GameState {
         return numPerguntas;
     }
 
+    public int getOrdemRespostas() {
+        return ordemRespostas;
+    }
+
     public void reporRespostasRecebidas(){
         respostasRecebidas = 0;
     }
@@ -75,6 +79,15 @@ public class GameState {
 
     public void incrementarIndicePerguntaAtual(){
         indicePerguntaAtual++;
+    }
+
+    public void incrementarOrdemRespostas(){
+        ordemRespostas++;
+    }
+
+
+    public void setPerguntas(Pergunta[] perguntas) {
+        this.perguntas = perguntas;
     }
 
     public Pergunta getPerguntaAtual() {

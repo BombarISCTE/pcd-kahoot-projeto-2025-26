@@ -30,6 +30,8 @@ public class DealWithQuestions {
         for(int i = 0; i < gameState.getNumPerguntas(); i++){
             perguntas[i] = listaPerguntas.get(i);
         }
+
+        gameState.setPerguntas(perguntas);
     }
 
     public boolean avancarProximaPergunta(){
