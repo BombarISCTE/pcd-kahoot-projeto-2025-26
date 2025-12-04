@@ -6,6 +6,7 @@ public class ModifiedCountdownLatch {
     private final int bonusCount;
     private final int waitPeriod;
     private int bonusUsados = 0;
+    private boolean tempoExpirado = false;
 
     public ModifiedCountdownLatch(int bonusFactor , int bonusCount , int waitPeriod , int count ) {
         this.bonusFactor = bonusFactor;
@@ -15,35 +16,50 @@ public class ModifiedCountdownLatch {
         this.count = count;
     }
 
-    // As threads chamam isto para esperar
+    // As threads chamam isto para esperar, esperam ate que o contador chegue a 0 ou o tempo expire
     public synchronized void await() throws InterruptedException {
-        while (count > 0) {
+        while (count > 0 && !tempoExpirado) {
             wait();
         }
     }
 
-    // O temporizador chama isto para reduzir o contador
+    // O temporizador chama isto para reduzir o contador, se o tempo expirar lança uma exceção,
+    // se o contador chegar a 0 notifica todas as threads em espera, retorna o fator de bónus se aplicável
     public synchronized int countDown() {
-       int fator;
-       if(bonusUsados < bonusCount){
+        if(tempoExpirado) {
+            throw new IllegalStateException("Tempo expirado: não é permitido decrementar após o tempo expirar.");
+        }
+
+        int fator;
+        if(bonusUsados < bonusCount){
            fator = bonusFactor;
            bonusUsados++;
-       } else {
+        } else {
            fator = 1;
-       }
-       count--;
-       if(count <= 0){
-           notify();
-       }
-       return fator;
+        }
+
+        count--;
+
+        if(count <= 0){
+           notifyAll();
+        }
+
+        return fator;
     }
 
-    public synchronized void reset(int count) { //caso queira reutilizar o latch
-        if (count < 0) throw new IllegalArgumentException("count < 0");
-        this.count = count;
+    // O temporizador chama isto quando o tempo expira para notificar todas as threads em espera
+    public synchronized void tempoExpirado() {
+        tempoExpirado = true;
+        count = 0;
+        notifyAll();
     }
 
     public synchronized int getCount() {
         return count;
     }
+
+    public int getWaitPeriod() {
+        return waitPeriod;
+    }
+
 }
