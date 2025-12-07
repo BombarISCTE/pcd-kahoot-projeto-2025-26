@@ -27,7 +27,7 @@ public class ModifiedCountdownLatch {
     // se o contador chegar a 0 notifica todas as threads em espera, retorna o fator de bónus se aplicável
     public synchronized int countDown() {
         if(tempoExpirado) {
-            throw new IllegalStateException("Tempo expirado: não é permitido decrementar após o tempo expirar.");
+            return 0;
         }
 
         int fator;

@@ -14,7 +14,6 @@ public class Timer extends Thread {
     public void run() {
         try {
             Thread.sleep(latch.getWaitPeriod() * 1000);
-
             latch.tempoExpirado();
             System.out.println("Tempo expirado! Todas as threads foram liberadas.");
         } catch (InterruptedException e) {

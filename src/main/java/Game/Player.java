@@ -4,7 +4,7 @@ public class Player {
     private int id;
     private String name;
     // private boolean isHost;
-    //private int score;
+    private int score;
     //private int rank;
     //private boolean isPlaying;
 
@@ -16,5 +16,9 @@ public class Player {
     @Override
     public String toString() {
         return "Player " + id + "- " + name;
+    }
+
+    public void adicionarPontos(int pontosGanhos) {
+        this.score += pontosGanhos;
     }
 }
