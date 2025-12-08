@@ -12,6 +12,10 @@ public class DealWithTeamAnswers {
     public DealWithTeamAnswers(GameState gameState, ModifiedBarrier barrier) {
         this.gameState = gameState;
         this.barrier = barrier;
+
+//        this.barrier = new ModifiedBarrier(
+//                totalJogadores, () -> aplicarPontuacao(equipaId)
+//        );
     }
 
     public void iniciarPerguntaEquipa(){
@@ -21,7 +25,7 @@ public class DealWithTeamAnswers {
     }
 
     public synchronized void registarRespostaEquipa(int equipaId, Player jogador, int opcaoEscolhida) throws InterruptedException {
-        boolean respostaCorreta = gameState.getPerguntaAtual().verificarResposta(opcaoEscolhida);
+        jogador.setOpcaoEscolhida(opcaoEscolhida);
         gameState.registarRespostaEquipa(equipaId);
         barrier.chegouJogador();
     }
@@ -32,6 +36,33 @@ public class DealWithTeamAnswers {
         }catch (InterruptedException e){
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void aplicarPontuacao(int equipaId){
+        Pergunta perguntaAtual = gameState.getPerguntaAtual();
+        Player[] jogadores = gameState.getJogadores()[equipaId];
+
+        int pontosPergunta = perguntaAtual.getPontos();
+        int numRespostasCorretas = 0;
+
+        for(Player jogador : jogadores){
+            if(perguntaAtual.verificarResposta(jogador.getOpcaoEscolhida())){
+                numRespostasCorretas++;
+            }
+        }
+        int pontosGanhos;
+        if(numRespostasCorretas == jogadores.length){
+            pontosGanhos = pontosPergunta * 2;
+        }else if(numRespostasCorretas > 0){
+            pontosGanhos = pontosPergunta;
+        }else {
+            pontosGanhos = 0;
+        }
+
+        for(Player jogador : jogadores){
+            jogador.setPontos(pontosGanhos);
+        }
+
     }
 
 

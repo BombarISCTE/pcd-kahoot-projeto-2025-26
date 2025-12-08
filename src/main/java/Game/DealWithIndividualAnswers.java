@@ -30,7 +30,7 @@ public class DealWithIndividualAnswers {
 
         if(respostaCorreta) {
             pontosGanhos = pontosPergunta * fator;
-            jogador.adicionarPontos(pontosGanhos);
+            jogador.setPontos(pontosGanhos);
         }
 
         return pontosGanhos;
