@@ -21,4 +21,5 @@ public class Player {
     public void adicionarPontos(int pontosGanhos) {
         this.score += pontosGanhos;
     }
+
 }

@@ -15,12 +15,25 @@ public class DealWithTeamAnswers {
     }
 
     public void iniciarPerguntaEquipa(){
-        timer = new Timer(barrier);
+        int tempo = gameState.getPerguntaAtual().getTempoLimite();
+        timer = new Timer(tempo, barrier);
         timer.start();
     }
 
-//public syncronized void registarRespostaEquipa(Team equipa, int opcaoEscolhida) {
-//        gameState
-//    }
+    public synchronized void registarRespostaEquipa(int equipaId, Player jogador, int opcaoEscolhida) throws InterruptedException {
+        boolean respostaCorreta = gameState.getPerguntaAtual().verificarResposta(opcaoEscolhida);
+        gameState.registarRespostaEquipa(equipaId);
+        barrier.chegouJogador();
+    }
+
+    public void esperarRespostasEquipa(){
+        try{
+            barrier.await();
+        }catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
 
 }
