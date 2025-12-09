@@ -13,14 +13,6 @@ public class DealWithQuestions {
         this.gameState = gameState;
     }
 
-    public boolean perguntaRespondidaPorTodos(){
-        int totalJogadores = gameState.getNumEquipas() * gameState.getNumJogadoresEquipa();
-        if(gameState.getRespostasRecebidas() >= totalJogadores){
-            return true;
-        }
-        return false;
-    }
-
     public void carregarPerguntas(Pergunta[] lista){
         Pergunta[] perguntas  = new Pergunta[gameState.getNumPerguntas()];
 

@@ -1,5 +1,7 @@
 package Utils;
 
+import Game.DealWithTeamAnswers;
+
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,6 +15,7 @@ public class ModifiedBarrier {
     private final Runnable barrierAction;
     private int jogadoresQueChegaram = 0;
     private boolean tempoExpirado = false;
+    private boolean acaoExecutada = false;
 
     public ModifiedBarrier(int totalJogadores, Runnable barrierAction) {
         this.totalJogadores = totalJogadores;
@@ -23,7 +26,8 @@ public class ModifiedBarrier {
         lock.lock();
         try{
             jogadoresQueChegaram++;
-            if(jogadoresQueChegaram >= totalJogadores){
+            if(jogadoresQueChegaram == totalJogadores && !acaoExecutada){
+                acaoExecutada = true;
                 barrierAction.run();
                 todosChegaram.signalAll();
             }
@@ -36,8 +40,12 @@ public class ModifiedBarrier {
         lock.lock();
         try{
             tempoExpirado = true;
-            barrierAction.run();
+            if(!acaoExecutada){
+                acaoExecutada = true;
+                barrierAction.run();
+            }
             todosChegaram.signalAll();
+
         }finally {
             lock.unlock();
         }
@@ -54,4 +62,14 @@ public class ModifiedBarrier {
         }
     }
 
+    public void reset(){
+        lock.lock();
+        try{
+            jogadoresQueChegaram = 0;
+            tempoExpirado = false;
+            acaoExecutada = false;
+        } finally {
+            lock.unlock();
+        }
+    }
 }

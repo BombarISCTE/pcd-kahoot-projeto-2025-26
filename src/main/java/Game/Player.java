@@ -19,7 +19,7 @@ public class Player {
         return "Player " + id + "- " + name;
     }
 
-    public void setPontos(int pontosGanhos) {
+    public void adicionarPontos(int pontosGanhos) {
         this.score += pontosGanhos;
     }
 
@@ -29,6 +29,14 @@ public class Player {
 
     public int getOpcaoEscolhida() {
         return opcaoEscolhida;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void resetOpcaoEscolhida() {
+        this.opcaoEscolhida = -1;
     }
 
 

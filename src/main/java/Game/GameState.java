@@ -63,6 +63,33 @@ public class GameState {
         return ordemRespostas;
     }
 
+    public Player[] getJogadoresDaEquipa(int equipaID){
+        int indiceEquipa = equipaID - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length){
+            throw new IllegalArgumentException("Equipa ID inválido" + equipaID);
+        }
+        return jogadores[indiceEquipa];
+    }
+
+    public Player getJogador(int equipaId, int jogadorId){
+        int indiceEquipa = equipaId - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length || jogadorId < 0 || jogadorId >= jogadores[indiceEquipa].length){
+            throw new IllegalArgumentException("Equipa ID ou Jogador ID inválido: " + equipaId + ", " + jogadorId);
+        }
+        return jogadores[indiceEquipa][jogadorId];
+    }
+
+    public Team[] getEquipas() {
+        return equipas;
+    }
+
+    public Pergunta getPerguntaAtual() {
+        if(indicePerguntaAtual < perguntas.length) {
+            return perguntas[indicePerguntaAtual];
+        }
+        return null;
+    }
+
     public void reporRespostasRecebidas(){
         respostasRecebidas = 0;
     }
@@ -74,6 +101,14 @@ public class GameState {
     public void reporRespostasEquipa(){
         for(int i = 0; i < respostasEquipa.length; i++) {
             respostasEquipa[i] = 0;
+        }
+    }
+
+    public void reporOpcoesEscolhidas(){
+        for(int i = 0; i < jogadores.length; i++) {
+            for(int j = 0; j < jogadores[i].length; j++) {
+                jogadores[i][j].resetOpcaoEscolhida();
+            }
         }
     }
 
@@ -90,15 +125,6 @@ public class GameState {
         this.perguntas = perguntas;
     }
 
-    public Pergunta getPerguntaAtual() {
-        if(indicePerguntaAtual < perguntas.length) {
-            return perguntas[indicePerguntaAtual];
-        }
-        return null;
-    }
-
-
-
     public boolean acabouJogo() {
         return indicePerguntaAtual >= perguntas.length;
     }
@@ -110,55 +136,24 @@ public class GameState {
     }
 
     public synchronized void registarRespostaEquipa(int equipaID){
-        respostasEquipa[equipaID]++;
-    }
-
-    public boolean equipaRespondeu(int equipaID){
-        if(respostasEquipa[equipaID] == numJogadoresEquipa){
-            return true;
+        int indiceEquipa = equipaID - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= numEquipas){
+            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
         }
-        return false;
+        respostasEquipa[indiceEquipa]++;
     }
 
-
-
-//    public boolean registrarResposta(Player jogador, int opcaoEscolhida) {
-//        if(respostasJogadores.containsKey(jogador)) {
-//            return false;
-//        }
-//        respostasJogadores.put(jogador, opcaoEscolhida);
-//        return true;
-//    }
-//
-//    public boolean respostaCorreta(Player jogador) {
-//        if(!respostasJogadores.containsKey(jogador)) {
-//            return false;
-//        }
-//        Pergunta perguntaAtual = getPerguntaAtual();
-//        int opcaoEscolhida = respostasJogadores.get(jogador);
-//        return perguntaAtual.verificarResposta(opcaoEscolhida);
-//    }
-//
-//    public boolean todasRespostasRecebidas(){
-//        int totalJogadores = numEquipas * numJogadoresEquipa;
-//        if(respostasJogadores.size() >= totalJogadores){
-//            return true;
-//        }
-//        return false;
-//    }
-//
 //    public boolean equipaRespondeu(int equipaID){
-//        int count = 0;
-//        for(Player jogador : jogadores[equipaID]){
-//            if(respostasJogadores.containsKey(jogador)){
-//                count++;
-//            }
+//        int indiceEquipa = equipaID - 1;
+//        if(indiceEquipa < 0 || indiceEquipa >= numEquipas){
+//            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
 //        }
-//        if(count == numJogadoresEquipa){
+//        if(respostasEquipa[indiceEquipa] == numJogadoresEquipa){
 //            return true;
 //        }
 //        return false;
 //    }
+
 
 
 

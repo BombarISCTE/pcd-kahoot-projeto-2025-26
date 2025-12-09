@@ -1,8 +1,4 @@
 package Utils;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
 public class Timer extends Thread {
     private ModifiedCountdownLatch latch = null;
     private ModifiedBarrier barrier = null;
