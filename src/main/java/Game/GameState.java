@@ -67,6 +67,10 @@ public class GameState {
         return indicePerguntaAtual;
     }
 
+    public int getTotalJogadores() {
+        return numEquipas * numJogadoresEquipa;
+    }
+
     public Player[] getJogadoresDaEquipa(int equipaID){
         int indiceEquipa = equipaID - 1;
         if(indiceEquipa < 0 || indiceEquipa >= jogadores.length){

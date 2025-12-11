@@ -16,7 +16,7 @@ public class DealWithTeamAnswers {
         this.equipaId = equipaId;
 
         this.barrier = new ModifiedBarrier(
-                totalJogadores, () -> aplicarPontuacao(/*indiceEquipa*/)
+                totalJogadores, () -> aplicarPontuacao()
         );
 
     }
