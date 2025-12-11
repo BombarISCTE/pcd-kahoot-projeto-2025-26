@@ -62,4 +62,13 @@ public class ModifiedCountdownLatch {
         return waitPeriod;
     }
 
+    public synchronized void reset(int newCount) {
+        if (newCount < 0){
+            throw new IllegalArgumentException("newCount < 0");
+        }
+        this.count = newCount;
+        this.tempoExpirado = false;
+        this.bonusUsados = 0;
+    }
+
 }

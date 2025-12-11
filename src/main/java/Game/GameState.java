@@ -38,7 +38,7 @@ public class GameState {
         for(int i = 0; i < numEquipas; i++) {
             equipas[i] = new Team("Equipa " + (i + 1), i + 1);
             for(int j = 0; j < numJogadoresEquipa; j++) {
-                jogadores[i][j] = new Player(j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
+                jogadores[i][j] = new Player(i * numJogadoresEquipa + j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
             }
         }
     }
@@ -88,6 +88,17 @@ public class GameState {
             return perguntas[indicePerguntaAtual];
         }
         return null;
+    }
+
+    public int getEquipaDoJogador(Player jogador){
+        for(int equipa = 0; equipa < equipas.length; equipa++){
+            for(Player p : jogadores[equipa]){
+                if(p == jogador){
+                    return equipa + 1;
+                }
+            }
+        }
+        return -1;
     }
 
     public void reporRespostasRecebidas(){
@@ -141,6 +152,18 @@ public class GameState {
             throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
         }
         respostasEquipa[indiceEquipa]++;
+    }
+
+    public void avancarParaProximaPergunta(){
+        indicePerguntaAtual++;
+        respostasRecebidas = 0;
+        ordemRespostas = 0;
+        reporOpcoesEscolhidas();
+    }
+
+    public void reporRespostasIndividuais() {
+        respostasRecebidas = 0;
+        ordemRespostas = 0;
     }
 
 //    public boolean equipaRespondeu(int equipaID){

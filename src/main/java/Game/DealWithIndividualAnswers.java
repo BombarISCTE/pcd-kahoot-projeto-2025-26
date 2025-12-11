@@ -14,12 +14,17 @@ public class DealWithIndividualAnswers {
     }
 
     public void iniciarPerguntaIndividual(){
+        int totalJogadores = gameState.getNumEquipas() * gameState.getNumJogadoresEquipa();
+        latch.reset(totalJogadores);
+        gameState.reporRespostasIndividuais();
+        gameState.reporOpcoesEscolhidas();
         timer = new Timer(latch);
         timer.start();
     }
 
-    public synchronized int registarRespostaIndividual(Player jogador, int opcaoEscolhida) {
-        gameState.registarRespostaIndividual();
+    public int registarRespostaIndividual(Player jogador, int opcaoEscolhida) {
+        jogador.setOpcaoEscolhida(opcaoEscolhida);
+        int ordemResposta = gameState.registarRespostaIndividual();
 
         boolean respostaCorreta = gameState.getPerguntaAtual().verificarResposta(opcaoEscolhida);
 

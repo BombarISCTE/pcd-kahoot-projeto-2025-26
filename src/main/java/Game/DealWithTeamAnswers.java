@@ -22,6 +22,9 @@ public class DealWithTeamAnswers {
     }
 
     public void iniciarPerguntaEquipa(){
+        barrier.reset();
+        gameState.reporRespostasEquipa();
+        gameState.reporOpcoesEscolhidas();
         int tempo = gameState.getPerguntaAtual().getTempoLimite();
         timer = new Timer(tempo, barrier);
         timer.start();
@@ -43,7 +46,8 @@ public class DealWithTeamAnswers {
 
     private void aplicarPontuacao(int equipaId){
         Pergunta perguntaAtual = gameState.getPerguntaAtual();
-        Player[] jogadores = gameState.getJogadoresDaEquipa(equipaId);
+        Player[] jogadores = gameState.getJogadoresDaEquipa(equipaId - 1);
+        Team[] equipas = gameState.getEquipas();
 
         int pontosPergunta = perguntaAtual.getPontos();
         int numRespostasCorretas = 0;
@@ -65,6 +69,8 @@ public class DealWithTeamAnswers {
         for(Player jogador : jogadores){
             jogador.adicionarPontos(pontosGanhos);
         }
+
+        equipas[equipaId - 1].addPoints(pontosGanhos);
 
 
     }

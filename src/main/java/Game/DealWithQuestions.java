@@ -27,13 +27,11 @@ public class DealWithQuestions {
     }
 
     public boolean avancarProximaPergunta(){
-        gameState.incrementarIndicePerguntaAtual();
+        gameState.avancarParaProximaPergunta();
+
         if(gameState.acabouJogo()){
             return false;
         }
-        gameState.reporRespostasRecebidas();
-        gameState.reporOrdemRespostas();
-        gameState.reporRespostasEquipa();
         return true;
     }
 }
