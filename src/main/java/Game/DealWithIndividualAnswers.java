@@ -16,7 +16,7 @@ public class DealWithIndividualAnswers {
     public void iniciarPerguntaIndividual(){
         int totalJogadores = gameState.getNumEquipas() * gameState.getNumJogadoresEquipa();
         latch.reset(totalJogadores);
-        gameState.reporRespostasIndividuais();
+        gameState.reporRespostas();
         gameState.reporOpcoesEscolhidas();
         timer = new Timer(latch);
         timer.start();

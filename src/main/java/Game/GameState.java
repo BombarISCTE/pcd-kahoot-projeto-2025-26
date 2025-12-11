@@ -63,10 +63,14 @@ public class GameState {
         return ordemRespostas;
     }
 
+    public int getIndicePerguntaAtual() {
+        return indicePerguntaAtual;
+    }
+
     public Player[] getJogadoresDaEquipa(int equipaID){
         int indiceEquipa = equipaID - 1;
         if(indiceEquipa < 0 || indiceEquipa >= jogadores.length){
-            throw new IllegalArgumentException("Equipa ID inválido" + equipaID);
+            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
         }
         return jogadores[indiceEquipa];
     }
@@ -93,20 +97,12 @@ public class GameState {
     public int getEquipaDoJogador(Player jogador){
         for(int equipa = 0; equipa < equipas.length; equipa++){
             for(Player p : jogadores[equipa]){
-                if(p == jogador){
+                if(p.getId() == jogador.getId()){
                     return equipa + 1;
                 }
             }
         }
         return -1;
-    }
-
-    public void reporRespostasRecebidas(){
-        respostasRecebidas = 0;
-    }
-
-    public void reporOrdemRespostas(){
-        ordemRespostas = 0;
     }
 
     public void reporRespostasEquipa(){
@@ -141,7 +137,7 @@ public class GameState {
     }
 
     public synchronized int registarRespostaIndividual(){
-        ordemRespostas++;
+        incrementarOrdemRespostas();
         respostasRecebidas++;
         return ordemRespostas;
     }
@@ -156,28 +152,14 @@ public class GameState {
 
     public void avancarParaProximaPergunta(){
         indicePerguntaAtual++;
+        reporRespostas();
+    }
+
+    public void reporRespostas() {
         respostasRecebidas = 0;
         ordemRespostas = 0;
         reporOpcoesEscolhidas();
+        reporRespostasEquipa();
     }
-
-    public void reporRespostasIndividuais() {
-        respostasRecebidas = 0;
-        ordemRespostas = 0;
-    }
-
-//    public boolean equipaRespondeu(int equipaID){
-//        int indiceEquipa = equipaID - 1;
-//        if(indiceEquipa < 0 || indiceEquipa >= numEquipas){
-//            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
-//        }
-//        if(respostasEquipa[indiceEquipa] == numJogadoresEquipa){
-//            return true;
-//        }
-//        return false;
-//    }
-
-
-
 
 }

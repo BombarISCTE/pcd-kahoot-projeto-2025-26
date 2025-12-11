@@ -39,5 +39,7 @@ public class Player {
         this.opcaoEscolhida = -1;
     }
 
-
+    public int getId() {
+        return id;
+    }
 }
