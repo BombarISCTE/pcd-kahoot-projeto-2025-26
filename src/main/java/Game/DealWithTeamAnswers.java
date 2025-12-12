@@ -12,11 +12,11 @@ public class DealWithTeamAnswers {
 
     public DealWithTeamAnswers(GameState gameState, int equipaId) {
         this.gameState = gameState;
-        int totalJogadores = gameState.getNumJogadoresEquipa();
+        int totalJogadoresEquipa = gameState.getNumJogadoresEquipa();
         this.equipaId = equipaId;
 
         this.barrier = new ModifiedBarrier(
-                totalJogadores, () -> aplicarPontuacao()
+                totalJogadoresEquipa, () -> aplicarPontuacao()
         );
 
     }

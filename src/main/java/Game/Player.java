@@ -8,6 +8,7 @@ public class Player {
     //private int rank;
     //private boolean isPlaying;
     private int opcaoEscolhida = -1;
+    private boolean jogadorConectado = false;
 
     public Player(int id, String name) {
         this.id = id;
@@ -42,4 +43,23 @@ public class Player {
     public int getId() {
         return id;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public void jogadorAtivo(String nomeJogador) {
+        this.name = nomeJogador;
+        this.jogadorConectado = true;
+    }
+
+    public boolean isJogadorConectado() {
+        return jogadorConectado;
+    }
+
+    public void desconectarJogador() {
+        this.jogadorConectado = false;
+        this.opcaoEscolhida = -1;
+    }
+
 }
