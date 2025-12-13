@@ -5,14 +5,14 @@ import Game.Pergunta;
 import javax.swing.*;
 import java.awt.*;
 
-public class ClientGUI extends JFrame {
+public class ClientGUI extends JFrame implements ClientListener {
 
     private JLabel mensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
     private Pergunta[] perguntas;
 
-    public ClientGUI(Pergunta[] perguntas) {
+    public ClientGUI() {
         this.perguntas = perguntas;
 
         //janela pricipal da Client

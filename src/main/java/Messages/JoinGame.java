@@ -13,6 +13,7 @@ public class JoinGame implements Serializable {
         this.codigoJogo = codigoJogo;
     }
 
+
     public String getNomeJogador() {
         return nomeJogador;
     }

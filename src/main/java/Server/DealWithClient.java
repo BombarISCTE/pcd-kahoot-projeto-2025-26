@@ -73,6 +73,7 @@ public class DealWithClient extends Thread{
                 return;
             }
             this.gameEngine = gameEngine;
+            gameEngine.adicionarCliente(this);
             this.jogadorConectado = jogador;
             this.equipaId = join.getEquipaId();
             System.out.println("Enviar resposta de JoinGameResponse");
