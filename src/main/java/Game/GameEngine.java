@@ -120,4 +120,9 @@ public class GameEngine {
             avancarProximaPergunta();
         }
     }
+
+    public Player registarJogador(int equipaId, String nomeJogador) {
+        Player jogador = gameState.ocuparSlotJogador(equipaId, nomeJogador);
+        return jogador;
+    }
 }
