@@ -11,8 +11,15 @@ public class ClientGUI extends JFrame implements ClientListener {
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
     private Pergunta[] perguntas;
+    private final Client client;
 
-    public ClientGUI() {
+    public ClientGUI(Client client) {
+        this.client = client;
+        client.setListener(this);
+        initGUI();
+    }
+
+    private void initGUI() {
         this.perguntas = perguntas;
 
         //janela pricipal da Client
@@ -98,5 +105,19 @@ public class ClientGUI extends JFrame implements ClientListener {
         }
         mensagemEspaco.setText("Fim das perguntas.");
         return;
+    }
+
+    @Override
+    public void onNewQuestion(String pergunta, String[] opcoes, int numeroPergunta, int tempoLimite) {
+        perguntaEspaco.setText(pergunta);
+        for(int i = 0; i < opcoesBotoes.length; i++){
+            opcoesBotoes[i].setText(opcoes[i]);
+        }
+        mensagemEspaco.setText("Pergunta " + numeroPergunta + " - Tempo limite: " + tempoLimite + " segundos");
+    }
+
+    @Override
+    public void onEndGame(String mensagem) {
+        JOptionPane.showMessageDialog(this, mensagem);
     }
 }
