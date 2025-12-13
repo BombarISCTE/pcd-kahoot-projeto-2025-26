@@ -6,13 +6,13 @@ public class NewQuestion implements Serializable {
     private String pergunta;
     private String[] opcoes;
     private int numeroPergunta;
-    private int tempoMaximo;
+    private int tempoLimite;
 
-    public NewQuestion(String pergunta, String[] opcoes, int numeroPergunta, int tempoMaximo) {
+    public NewQuestion(String pergunta, String[] opcoes, int numeroPergunta, int tempoLimite) {
         this.pergunta = pergunta;
         this.opcoes = opcoes;
         this.numeroPergunta = numeroPergunta;
-        this.tempoMaximo = tempoMaximo;
+        this.tempoLimite = tempoLimite;
     }
 
     public String getPergunta() {
@@ -27,8 +27,8 @@ public class NewQuestion implements Serializable {
         return numeroPergunta;
     }
 
-    public int getTempoResposta() {
-        return tempoMaximo;
+    public int getTempoLimite() {
+        return tempoLimite;
     }
 
 }

@@ -104,8 +104,4 @@ public class Pergunta {
         }
     }
 
-
-    public int getTempoLimite() {
-        return MAX_TIMER;
-    }
 }

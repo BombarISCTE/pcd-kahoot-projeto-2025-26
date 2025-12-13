@@ -1,6 +1,11 @@
 package Game;
 
+import Messages.NewQuestion;
+import Server.DealWithClient;
 import Utils.ModifiedCountdownLatch;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameEngine {
     private GameState gameState;
@@ -8,6 +13,8 @@ public class GameEngine {
     private DealWithQuestions dealWithQuestions;
     private DealWithIndividualAnswers individualHandler;
     private DealWithTeamAnswers[] equipaHandler;
+
+    private final List<DealWithClient> clientes;
 
     private int equipasTerminadas = 0;
 
@@ -26,6 +33,8 @@ public class GameEngine {
         for (int equipaId = 1; equipaId <= numEquipas; equipaId++) {
             this.equipaHandler[equipaId - 1] = new DealWithTeamAnswers(gameState, equipaId, this);
         }
+
+        this.clientes = new ArrayList<>();
     }
 
     public void iniciarJogo(){
@@ -42,6 +51,9 @@ public class GameEngine {
             terminarJogo();
             return;
         }
+        System.out.println("Pergunta a ser enviada: " + perguntaAtual.getQuestao());
+        enviarPerguntaAtualParaClientes();
+
         System.out.println("Pergunta nº " + (gameState.getIndicePerguntaAtual() + 1) + ": " + perguntaAtual.getQuestao());
         if(isPerguntaIndividual()){
             comecarPerguntaIndividual();
@@ -91,7 +103,6 @@ public class GameEngine {
 
     public void terminarJogo(){
         System.out.println("O jogo terminou.");
-
     }
 
     private void avancarProximaPergunta(){
@@ -125,4 +136,19 @@ public class GameEngine {
         Player jogador = gameState.ocuparSlotJogador(equipaId, nomeJogador);
         return jogador;
     }
+
+    public synchronized void adicionarCliente(DealWithClient cliente) {
+        clientes.add(cliente);
+    }
+
+    private void enviarPerguntaAtualParaClientes() {
+        Pergunta perguntaAtual = gameState.getPerguntaAtual();
+        NewQuestion novaPergunta = new NewQuestion(perguntaAtual.getQuestao(), perguntaAtual.getOpcoes(), gameState.getIndicePerguntaAtual() + 1, perguntaAtual.getMaxTimer());
+        for(DealWithClient cliente : clientes) {
+            cliente.enviarMensagem(novaPergunta);
+        }
+    }
+
+
+
 }

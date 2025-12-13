@@ -112,7 +112,7 @@ public class DealWithClient extends Thread{
         }
     }
 
-    private synchronized void enviarMensagem(Object mensagem){
+    public synchronized void enviarMensagem(Object mensagem){
         try{
             out.writeObject(mensagem);
             out.flush();

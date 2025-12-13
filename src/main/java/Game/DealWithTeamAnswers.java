@@ -28,7 +28,7 @@ public class DealWithTeamAnswers {
         barrier.reset();
         gameState.reporRespostasEquipa();
         gameState.reporOpcoesEscolhidas();
-        int tempo = gameState.getPerguntaAtual().getTempoLimite();
+        int tempo = gameState.getPerguntaAtual().getMaxTimer();
         timer = new Timer(tempo, barrier);
         timer.start();
     }
