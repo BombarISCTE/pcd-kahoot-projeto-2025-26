@@ -10,7 +10,7 @@ public class ClientGUI extends JFrame implements ClientListener {
     private JLabel mensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
-    private Pergunta[] perguntas;
+//    private Pergunta[] perguntas;
     private final Client client;
 
     public ClientGUI(Client client) {
@@ -20,7 +20,7 @@ public class ClientGUI extends JFrame implements ClientListener {
     }
 
     private void initGUI() {
-        this.perguntas = perguntas;
+//        this.perguntas = perguntas;
 
         //janela pricipal da Client
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
