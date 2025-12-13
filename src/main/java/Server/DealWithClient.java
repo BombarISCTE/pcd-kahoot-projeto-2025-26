@@ -14,16 +14,17 @@ public class DealWithClient extends Thread{
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
-    private final GameEngine gameEngine;
-
     private volatile boolean running = true;
 
     private Player jogadorConectado;
     private int equipaId;
 
-    public DealWithClient(Socket socket, GameEngine gameEngine) {
+    private final Server server;
+    private GameEngine gameEngine;
+
+    public DealWithClient(Socket socket, Server server) {
         this.socket = socket;
-        this.gameEngine = gameEngine;
+        this.server = server;
         try{
             doConnections(socket);
         }catch(IOException e){
@@ -54,12 +55,24 @@ public class DealWithClient extends Thread{
 
     private void tratarMensagem(Object mensagem) throws IOException {
         if(mensagem instanceof JoinGame join){
+            if (this.gameEngine != null) {
+                System.out.println("Jogador já associado a um jogo");
+                enviarMensagem(new EndGame("Jogador já associado a um jogo"));
+                return;
+            }
+            GameEngine gameEngine = server.getGame(join.getCodigoJogo());
+            if(gameEngine == null){
+                System.out.println("Jogo nao encontrado");
+                enviarMensagem(new EndGame("Jogo nao encontrado"));
+                return;
+            }
             Player jogador = gameEngine.registarJogador(join.getEquipaId(), join.getNomeJogador());
             if(jogador == null){
                 System.out.println("Equipa cheia ou jogo ja comecou");
                 enviarMensagem(new EndGame("Equipa cheia ou jogo ja comecou"));
                 return;
             }
+            this.gameEngine = gameEngine;
             this.jogadorConectado = jogador;
             this.equipaId = join.getEquipaId();
             System.out.println("Enviar resposta de JoinGameResponse");
@@ -67,7 +80,7 @@ public class DealWithClient extends Thread{
         }
 
         else if(mensagem instanceof Answer answer){
-            if(jogadorConectado == null){
+            if(gameEngine == null || jogadorConectado == null){
                 System.out.println("Jogador nao conectado");
                 enviarMensagem(new EndGame("Jogador nao conectado"));
                 return;
@@ -82,8 +95,8 @@ public class DealWithClient extends Thread{
 
         else if(mensagem instanceof ExitGame exitGame){
             System.out.println("Jogador " + jogadorConectado.getName() + " a sair do jogo");
-            closeConnection();
             running = false;
+            closeConnection();
         }
     }
 
