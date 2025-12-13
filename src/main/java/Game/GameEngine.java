@@ -9,7 +9,7 @@ public class GameEngine {
     private DealWithIndividualAnswers individualHandler;
     private DealWithTeamAnswers[] equipaHandler;
 
-    private int jogadoresProntos = 0;
+    private int equipasTerminadas = 0;
 
     public GameEngine(GameState gameState, Pergunta[] perguntas) {
         this.gameState = gameState;
@@ -24,7 +24,7 @@ public class GameEngine {
         int numEquipas = gameState.getNumEquipas();
         this.equipaHandler = new DealWithTeamAnswers[numEquipas];
         for (int equipaId = 1; equipaId <= numEquipas; equipaId++) {
-            this.equipaHandler[equipaId - 1] = new DealWithTeamAnswers(gameState, equipaId);
+            this.equipaHandler[equipaId - 1] = new DealWithTeamAnswers(gameState, equipaId, this);
         }
     }
 
@@ -33,21 +33,6 @@ public class GameEngine {
         Pergunta perguntaAtual = gameState.getPerguntaAtual();
         System.out.println("Pergunta nº" + gameState.getIndicePerguntaAtual() + 1 + ": " + perguntaAtual.getQuestao());
         iniciarPerguntaAtual();
-
-//        if(perguntaAtual == null){
-//            System.out.println("Erro: Nao ha perguntas disponiveis");
-//            terminarJogo();
-//            return;
-//        }
-//        if(isPerguntaIndividual()){
-//            comecarPerguntaIndividual();
-//        }else {
-//            comecarPerguntaEquipa();
-//        }
-//
-////        if(!dealWithQuestions.avancarProximaPergunta()){
-////            break;
-////        }
     }
 
     private void iniciarPerguntaAtual() {
@@ -58,13 +43,10 @@ public class GameEngine {
             return;
         }
         System.out.println("Pergunta nº " + (gameState.getIndicePerguntaAtual() + 1) + ": " + perguntaAtual.getQuestao());
-        jogadoresProntos = 0;
         if(isPerguntaIndividual()){
-            individualHandler.iniciarPerguntaIndividual();
+            comecarPerguntaIndividual();
         }else {
-            for (DealWithTeamAnswers handlerEquipa : equipaHandler) {
-                handlerEquipa.iniciarPerguntaEquipa();
-            }
+            comecarPerguntaEquipa();
         }
     }
 
@@ -75,27 +57,24 @@ public class GameEngine {
         return false;
     }
 
-//    private void comecarPerguntaIndividual(){
-//        System.out.println("A iniciar pergunta individual...");
-//        individualHandler.iniciarPerguntaIndividual();
-//
-//
-//        individualHandler.esperarRespostasIndividuais();
-//
-//        System.out.println("Pergunta individual finalizada.");
-//    }
-//
-//    private void comecarPerguntaEquipa(){
-//        System.out.println("A iniciar pergunta de equipa...");
-//        for(DealWithTeamAnswers handlerEquipa : equipaHandler){
-//            handlerEquipa.iniciarPerguntaEquipa();
-//        }
-//        for(DealWithTeamAnswers handlerEquipa : equipaHandler){
-//            handlerEquipa.esperarRespostasEquipa();
-//        }
-//
-//        System.out.println("Pergunta de equipa finalizada.");
-//    }
+    private void comecarPerguntaIndividual(){
+        System.out.println("A iniciar pergunta individual...");
+        individualHandler.iniciarPerguntaIndividual();
+
+        individualHandler.esperarRespostasIndividuais();
+        System.out.println("Pergunta individual finalizada.");
+
+        System.out.println("A avançar para a próxima pergunta...");
+        avancarProximaPergunta();
+    }
+
+    private void comecarPerguntaEquipa(){
+        System.out.println("A iniciar pergunta de equipa...");
+
+        for(DealWithTeamAnswers handlerEquipa : equipaHandler){
+            handlerEquipa.iniciarPerguntaEquipa();
+        }
+    }
 
     public synchronized void registarResposta(Player jogador, int opcaoEscolhida){
         if(isPerguntaIndividual()){
@@ -110,27 +89,35 @@ public class GameEngine {
         }
     }
 
-
-    public void jogadorProntoParaProximaPergunta(Player jogadorConectado) {
-        jogadoresProntos++;
-        if(jogadoresProntos == gameState.getNumEquipas()){
-            avançarProximaPergunta();
-        }
-
-    }
-
     public void terminarJogo(){
         System.out.println("O jogo terminou.");
 
     }
 
-    private void avançarProximaPergunta(){
+    private void avancarProximaPergunta(){
         gameState.avancarParaProximaPergunta();
         if (gameState.acabouJogo()){
             terminarJogo();
         } else {
             iniciarPerguntaAtual();
         }
+    }
 
+    public void equipaTerminou(int equipaId){
+        boolean avancar = false;
+        synchronized(this) {
+            equipasTerminadas++;
+            System.out.println("Equipa: " + equipaId + " terminou a pergunta. Total equipas terminadas: " + equipasTerminadas + "/" + gameState.getNumEquipas());
+
+            if (equipasTerminadas == gameState.getNumEquipas()) {
+                System.out.println("Todas as equipas terminaram a pergunta.");
+                equipasTerminadas = 0;
+                avancar = true;
+            }
+        }
+        if(avancar){
+            System.out.println("A avançar para a próxima pergunta...");
+            avancarProximaPergunta();
+        }
     }
 }

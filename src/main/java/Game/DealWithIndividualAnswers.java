@@ -23,6 +23,10 @@ public class DealWithIndividualAnswers {
     }
 
     public int registarRespostaIndividual(Player jogador, int opcaoEscolhida) {
+        if(jogador.getOpcaoEscolhida() != -1){
+            return 0;
+        }
+
         jogador.setOpcaoEscolhida(opcaoEscolhida);
         int ordemResposta = gameState.registarRespostaIndividual();
 

@@ -1,22 +1,34 @@
 package Server;
 
+import Game.GameEngine;
+import Game.GameState;
+import Game.Player;
+import Messages.*;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class DealWithClient extends Thread{
-    private Socket socket;
+    private final Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
+    private final GameState gameState;
+    private final GameEngine gameEngine;
 
-    public DealWithClient(Socket socket) {
-        this.socket = socket ;
-        try {
+    private Player jogadorConectado;
+    private int equipaId;
+
+    public DealWithClient(Socket socket, GameState gameState, GameEngine gameEngine) {
+        this.socket = socket;
+        this.gameState = gameState;
+        this.gameEngine = gameEngine;
+        try{
             doConnections(socket);
-        } catch (IOException e) {
-            System.err.println("Erro ao criar canais: " + e.getMessage());
+        }catch(IOException e){
+            System.out.println("Erro ao criar os canais");
         }
     }
 
@@ -26,38 +38,67 @@ public class DealWithClient extends Thread{
         in = new ObjectInputStream(socket.getInputStream());
     }
 
-    private void closeConnections() {
-        System.out.println("A fechar conexão com " + socket.getInetAddress().getHostAddress() + "...");
-        try {
-            if (out != null) {
-                out.close();
+    @Override
+    public void run() {
+        try{
+            while(true) {
+                Object mensagem = in.readObject();
+                tratarMensagem(mensagem);
             }
-            if (in != null) {
-                in.close();
+        }catch (Exception e){
+            System.out.println("Erro ao carregar as mensagem");
+            closeConnection();
+            e.printStackTrace();
+        }
+
+    }
+
+    private void tratarMensagem(Object mensagem) throws IOException {
+        if(mensagem instanceof JoinGame join){
+            Player jogador = gameState.ocuparSlotJogador(join.getEquipaId(), join.getNomeJogador());
+            if(jogador == null){
+                System.out.println("Equipa cheia ou jogo ja comecou");
+                out.writeObject(new EndGame("Equipa cheia ou jogo ja comecou"));
+                return;
             }
-            if (socket != null && !socket.isClosed()){
-                socket.close();
+            this.jogadorConectado = jogador;
+            this.equipaId = join.getEquipaId();
+            System.out.println("Enviar resposta de JoinGameResponse");
+            out.writeObject(new JoinGameResponse(jogador.getId(), equipaId, jogador.getName()));
+        }
+
+        else if(mensagem instanceof Answer answer){
+            if(jogadorConectado == null){
+                System.out.println("Jogador nao conectado");
+                out.writeObject(new EndGame("Jogador nao conectado"));
+                return;
             }
-        } catch (IOException e) {
-            System.err.println("Erro ao fechar conexões: " + e.getMessage());
+            System.out.println("Registrar resposta do jogador " + jogadorConectado.getName());
+            gameEngine.registarResposta(jogadorConectado, answer.getOpcaoEscolhida());
+        }
+
+        else if(mensagem instanceof ReadyNextQuestion nextQuestion){
+            System.out.println("Jogador " + jogadorConectado.getName() + " pronto para proxima pergunta");
+            gameEngine.jogadorProntoParaProximaPergunta(jogadorConectado);
+        }
+
+        else if(mensagem instanceof ExitGame exitGame){
+            System.out.println("Jogador " + jogadorConectado.getName() + " a sair do jogo");
+            closeConnection();
         }
     }
 
-
-//    @Override
-//    public void run() {
-//        try {
-//            while (true) {
-//                switch ()
-//            }
-//        } catch (IOException e) {
-//            System.err.println("Conexão perdida ou erro de I/O com o cliente " + socket.getInetAddress() + ": " + e.getMessage());
-//        } catch (ClassNotFoundException e) {
-//            System.err.println("Erro de desserialização (classe Message não encontrada): " + e.getMessage());
-//        } finally {
-//            closeConnections();
-//        }
-//
-//    }
+    private void closeConnection() {
+        try{
+            if(jogadorConectado != null){
+                jogadorConectado.desconectarJogador();
+            }
+            System.out.println("A fechar ligacao com o cliente");
+            socket.close();
+        }catch (IOException e){
+            System.out.println("Erro ao fechar a ligacao");
+        }
+    }
+    
 }
 

@@ -32,7 +32,7 @@ public class Server {
 
 //                new Thread(() -> handleClient(clientSocket)).start();
 
-                DealWithClient handler = new DealWithClient(socket);
+                DealWithClient handler = new DealWithClient(socket, );
                 handler.start();
             }
         } catch (IOException e) {
