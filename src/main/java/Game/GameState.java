@@ -168,18 +168,14 @@ public class GameState {
 
     public Player ocuparSlotJogador(int equipaId, String nomeJogador) {
         Player[] equipa = jogadores[equipaId - 1];
-        for (Player jogador : equipa) {
-            if (!jogador.isJogadorConectado()) {
-                jogador.jogadorAtivo(nomeJogador);
-                return jogador;
+        for (Player p : equipa) {
+            if (!p.isJogadorConectado()) {
+                p.jogadorAtivo(nomeJogador);
+                return p;
             }
         }
         return null;
     }
 
-    public void desconectarJogador(int equipaId, int jogadorId) {
-        Player jogador = getJogador(equipaId, jogadorId);
-        jogador.desconectarJogador();
-    }
 
 }

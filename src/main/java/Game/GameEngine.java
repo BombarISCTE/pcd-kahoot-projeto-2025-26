@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameEngine {
-    private GameState gameState;
 
+    private GameState gameState;
     private DealWithQuestions dealWithQuestions;
     private DealWithIndividualAnswers individualHandler;
     private DealWithTeamAnswers[] equipaHandler;
@@ -143,7 +143,7 @@ public class GameEngine {
 
     private void enviarPerguntaAtualParaClientes() {
         Pergunta perguntaAtual = gameState.getPerguntaAtual();
-        NewQuestion novaPergunta = new NewQuestion(perguntaAtual.getQuestao(), perguntaAtual.getOpcoes(), gameState.getIndicePerguntaAtual() + 1, perguntaAtual.getMaxTimer());
+        NewQuestion novaPergunta = new NewQuestion(perguntaAtual.getQuestao(), perguntaAtual.getOpcoes(), gameState.getIndicePerguntaAtual() + 1);
         for(DealWithClient cliente : clientes) {
             cliente.enviarMensagem(novaPergunta);
         }

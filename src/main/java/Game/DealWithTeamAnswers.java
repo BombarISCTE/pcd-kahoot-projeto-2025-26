@@ -1,5 +1,6 @@
 package Game;
 
+import Utils.Constants;
 import Utils.ModifiedBarrier;
 import Utils.Timer;
 
@@ -28,7 +29,7 @@ public class DealWithTeamAnswers {
         barrier.reset();
         gameState.reporRespostasEquipa();
         gameState.reporOpcoesEscolhidas();
-        int tempo = gameState.getPerguntaAtual().getMaxTimer();
+        int tempo = Constants.TIMOUT_SECS;
         timer = new Timer(tempo, barrier);
         timer.start();
     }

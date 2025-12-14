@@ -39,6 +39,7 @@ public class ModifiedCountdownLatch {
         }
 
         count--;
+        System.out.println("ModifiedCountdownLatch - countDown chamado, count atual: " + count);
 
         if(count <= 0){
            notifyAll();
