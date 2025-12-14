@@ -20,7 +20,7 @@ public class Pergunta {
     //o array de strings é mais simples de implementar e entender para este caso especifico, onde o numero de opcoes é fixo (4 opcoes)
     private String[] options;
 
-    public Pergunta(String question,  int correct,int points, /*List<String> options*/ String[] options) {
+    public Pergunta(String question, int correct, int points, /*List<String> options*/ String[] options) {
         this.question = question;
         this.points = points;
         this.correct = correct;
@@ -103,7 +103,5 @@ public class Pergunta {
             System.err.println("Erro ao ler o ficheiro de perguntas: " + e.getMessage());
         }
     }
-
-
 
 }
