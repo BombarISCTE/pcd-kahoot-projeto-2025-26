@@ -1,14 +1,18 @@
 package Game;
 
+import Messages.EndGame;
 import Messages.NewQuestion;
+import Messages.Statistic;
 import Server.DealWithClient;
 import Utils.ModifiedCountdownLatch;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class GameEngine {
     private GameState gameState;
+    private GameStatistics gameStatistics;
 
     private DealWithQuestions dealWithQuestions;
     private DealWithIndividualAnswers individualHandler;
@@ -20,13 +24,14 @@ public class GameEngine {
 
     public GameEngine(GameState gameState, Pergunta[] perguntas) {
         this.gameState = gameState;
+        this.gameStatistics = new GameStatistics();
 
         this.dealWithQuestions = new DealWithQuestions(gameState);
         this.dealWithQuestions.carregarPerguntas(perguntas);
 
         int totalJogadores = gameState.getTotalJogadores();
         ModifiedCountdownLatch latchIndividual = new ModifiedCountdownLatch(2, 2, 30, totalJogadores);
-        this.individualHandler = new DealWithIndividualAnswers(gameState, latchIndividual);
+        this.individualHandler = new DealWithIndividualAnswers(gameState, latchIndividual, this);
 
         int numEquipas = gameState.getNumEquipas();
         this.equipaHandler = new DealWithTeamAnswers[numEquipas];
@@ -35,6 +40,10 @@ public class GameEngine {
         }
 
         this.clientes = new ArrayList<>();
+    }
+
+    public GameStatistics getGameStatistics() {
+        return gameStatistics;
     }
 
     public void iniciarJogo(){
@@ -76,6 +85,8 @@ public class GameEngine {
         individualHandler.esperarRespostasIndividuais();
         System.out.println("Pergunta individual finalizada.");
 
+        fecharPergunta();
+
         System.out.println("A avançar para a próxima pergunta...");
         avancarProximaPergunta();
     }
@@ -102,6 +113,11 @@ public class GameEngine {
     }
 
     public void terminarJogo(){
+        Statistic estatisticaFinal = new Statistic(new HashMap<>(gameStatistics.getPontosJogadores()));
+        for(DealWithClient cliente : clientes) {
+            cliente.enviarMensagem(estatisticaFinal);
+            cliente.enviarMensagem(new EndGame("O jogo terminou."));
+        }
         System.out.println("O jogo terminou.");
     }
 
@@ -127,6 +143,7 @@ public class GameEngine {
             }
         }
         if(avancar){
+            fecharPergunta();
             System.out.println("A avançar para a próxima pergunta...");
             avancarProximaPergunta();
         }
@@ -143,10 +160,21 @@ public class GameEngine {
 
     private void enviarPerguntaAtualParaClientes() {
         Pergunta perguntaAtual = gameState.getPerguntaAtual();
-        NewQuestion novaPergunta = new NewQuestion(perguntaAtual.getQuestao(), perguntaAtual.getOpcoes(), gameState.getIndicePerguntaAtual() + 1, perguntaAtual.getMaxTimer());
+        long tempoInicio = System.currentTimeMillis();
+        NewQuestion novaPergunta = new NewQuestion(perguntaAtual.getQuestao(), perguntaAtual.getOpcoes(), gameState.getIndicePerguntaAtual() + 1, perguntaAtual.getMaxTimer(), tempoInicio);
         for(DealWithClient cliente : clientes) {
             cliente.enviarMensagem(novaPergunta);
         }
     }
 
+    public void fecharPergunta(){
+        enviarEstatisticas();
+    }
+
+    private void enviarEstatisticas() {
+        Statistic estatistica = new Statistic(new HashMap<>(gameStatistics.getPontosJogadores()));
+        for(DealWithClient cliente : clientes) {
+            cliente.enviarMensagem(estatistica);
+        }
+    }
 }

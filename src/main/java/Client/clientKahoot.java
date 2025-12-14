@@ -23,7 +23,7 @@ public class clientKahoot {
 
         try{
             Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/java/Game/FicheiroQuestoes.json");
-            ClientGUI gui = new ClientGUI(perguntas);
+            ClientGUI gui = new ClientGUI();
         }catch(Exception e){
             e.printStackTrace();
         }

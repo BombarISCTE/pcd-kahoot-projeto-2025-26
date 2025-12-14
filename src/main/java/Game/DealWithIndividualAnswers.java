@@ -7,10 +7,12 @@ public class DealWithIndividualAnswers {
     private GameState gameState;
     private ModifiedCountdownLatch latch;
     private Timer timer;
+    private GameEngine gameEngine;
 
-    public DealWithIndividualAnswers(GameState gameState, ModifiedCountdownLatch countDownLatch) {
+    public DealWithIndividualAnswers(GameState gameState, ModifiedCountdownLatch countDownLatch, GameEngine gameEngine) {
         this.gameState = gameState;
         this.latch = countDownLatch;
+        this.gameEngine = gameEngine;
     }
 
     public void iniciarPerguntaIndividual(){
@@ -40,6 +42,7 @@ public class DealWithIndividualAnswers {
         if(respostaCorreta) {
             pontosGanhos = pontosPergunta * fator;
             jogador.adicionarPontos(pontosGanhos);
+            gameEngine.getGameStatistics().atualizaPontosJogadores(jogador.getId(), pontosGanhos);
         }
 
         return pontosGanhos;

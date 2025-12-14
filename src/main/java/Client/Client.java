@@ -87,6 +87,10 @@ public class Client {
                     tratarNovaQuestao(novaQuestao);
                 }
 
+                else if(mensagem instanceof Statistic estatistica){
+                    tratarEstatistica(estatistica);
+                }
+
                 else if(mensagem instanceof EndGame fimJogo){
                     tratarFimJogo(fimJogo);
                     break;
@@ -105,7 +109,13 @@ public class Client {
 
     private void tratarNovaQuestao(NewQuestion novaQuestao) {
         if(listener != null){
-            listener.onNewQuestion(novaQuestao.getPergunta(), novaQuestao.getOpcoes(), novaQuestao.getNumeroPergunta(), novaQuestao.getTempoLimite());
+            listener.onNewQuestion(novaQuestao.getPergunta(), novaQuestao.getOpcoes(), novaQuestao.getNumeroPergunta(), novaQuestao.getTempoLimite(), novaQuestao.getTempoInicio());
+        }
+    }
+
+    private void tratarEstatistica(Statistic estatistica) {
+        if(listener != null){
+            listener.onStatistic(estatistica.getPontosJogadores());
         }
     }
 
