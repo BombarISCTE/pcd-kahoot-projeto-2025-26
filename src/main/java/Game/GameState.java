@@ -1,5 +1,7 @@
 package Game;
 
+import Utils.IdCodeGenerator;
+
 import java.util.HashMap;
 
 public class GameState {
