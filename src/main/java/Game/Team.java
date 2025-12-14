@@ -2,9 +2,9 @@ package Game;
 
 public class Team {
 
-    int totalPoints;
-    String teamName;
-    int teamCode;
+    private int totalPoints;
+    private String teamName;
+    private int teamCode;
 
     public Team (String teamName, int teamCode) {
         this.teamName = teamName;

@@ -5,15 +5,22 @@ import Game.Pergunta;
 import javax.swing.*;
 import java.awt.*;
 
-public class ClientGUI extends JFrame {
+public class ClientGUI extends JFrame implements ClientListener {
 
     private JLabel mensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
-    private Pergunta[] perguntas;
+//    private Pergunta[] perguntas;
+    private final Client client;
 
-    public ClientGUI(Pergunta[] perguntas) {
-        this.perguntas = perguntas;
+    public ClientGUI(Client client) {
+        this.client = client;
+        client.setListener(this);
+        initGUI();
+    }
+
+    private void initGUI() {
+//        this.perguntas = perguntas;
 
         //janela pricipal da Client
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -72,7 +79,7 @@ public class ClientGUI extends JFrame {
         //Adiciona no fim da Client uma zona para colocar um cronometro com o tempo estabelecido pelo servidor
         JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
         JLabel tempo = new JLabel("Tempo: --", SwingConstants.LEFT);
-        mensagemEspaco = new JLabel("Mensagem: --", SwingConstants.RIGHT);
+        mensagemEspaco = new JLabel("Utils.Mensagem: --", SwingConstants.RIGHT);
 
         painelInferior.add(tempo, BorderLayout.WEST);
         painelInferior.add(mensagemEspaco, BorderLayout.EAST);
@@ -98,5 +105,19 @@ public class ClientGUI extends JFrame {
         }
         mensagemEspaco.setText("Fim das perguntas.");
         return;
+    }
+
+    @Override
+    public void onNewQuestion(String pergunta, String[] opcoes, int numeroPergunta, int tempoLimite) {
+        perguntaEspaco.setText(pergunta);
+        for(int i = 0; i < opcoesBotoes.length; i++){
+            opcoesBotoes[i].setText(opcoes[i]);
+        }
+        mensagemEspaco.setText("Pergunta " + numeroPergunta + " - Tempo limite: " + tempoLimite + " segundos");
+    }
+
+    @Override
+    public void onEndGame(String mensagem) {
+        JOptionPane.showMessageDialog(this, mensagem);
     }
 }

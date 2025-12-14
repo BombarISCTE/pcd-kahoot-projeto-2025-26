@@ -1,78 +1,48 @@
 package Server;
 
-import Game.Game;
+
+import Game.GameEngine;
+import Utils.IdCodeGenerator;
 
 import java.io.*;
 import java.net.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.Semaphore;
+import java.util.List;
 
 public class Server {
-    private ArrayList<Game> listOfGames;
-    private static final int PORT=12345;
-    private static final String IP= "localhost";
-    private HashMap<String, Game> activeGames;
-    private Semaphore semaphore; //todo posso usar ou tenho de criar uma classe semaforo?
+    private static final int PORT = 8080;
+
+    private HashMap<String, GameEngine> jogosAtivos;
 
     public Server() {
-        listOfGames = new ArrayList<>();
-        activeGames = new HashMap<>();
-        semaphore = new Semaphore(5);
+        jogosAtivos = new HashMap<>();
     }
 
     public void startServer() {
+        System.out.println("Server started on port " + PORT);
         try(ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server started on port " + PORT);
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Server - New client connected: " + clientSocket.getInetAddress().getHostAddress());
-                // Handle client connection in a new thread
+                Socket socket = serverSocket.accept();
+                System.out.println("Server - New client connected: " + socket.getInetAddress().getHostAddress());
 
-                new Thread(() -> handleClient(clientSocket)).start();
+                DealWithClient clientHandler = new DealWithClient(socket, this);
+                clientHandler.start();
             }
         } catch (IOException e) {
+            System.err.println("Erro no servidor: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void handleClient(Socket clientSocket) { //todo
-        try {
-            semaphore.acquire();
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-            // Exemplo: lê username do cliente
-            String username = in.readLine();
-            System.out.println("Cliente: " + username);
-            out.println("Bem-vindo, " + username + "!");
-
-            // TODO: lógica do jogo
-
-            //in.close();
-            //out.close();
-            clientSocket.close(); //  --> geralmente fechar o socket fecha os streams associados
-
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            semaphore.release();
-        }
+    public synchronized GameEngine getGame(String codigoJogo) {
+        return jogosAtivos.get(codigoJogo);
     }
 
-
-    public void addGame(Game game) {
-        this.listOfGames.add(game);
+    public synchronized String criarNovoJogo(GameEngine gameEngine) {
+        String codigoJogo = IdCodeGenerator.gerarCodigo();
+        jogosAtivos.put(codigoJogo, gameEngine);
+        return codigoJogo;
     }
-
-    private String gameStatistics() {
-        return "Not implemented yet"; //todo
-    }
-
-    private void nextQuestion() {
-        //todo
-    }
-
 
 }

@@ -2,7 +2,7 @@ package Game;
 
 import Utils.IdCodeGenerator;
 
-import java.util.HashMap;
+import java.util.*;
 
 public class GameState {
 
@@ -10,6 +10,7 @@ public class GameState {
 
     private final int numEquipas;
     private int numJogadoresEquipa;
+    private int numPerguntas;
 
     private Team[] equipas;
     private Player[][] jogadores;
@@ -17,26 +18,27 @@ public class GameState {
     private Pergunta[] perguntas;
     private int indicePerguntaAtual = 0;
 
-    private HashMap<Player, Integer> respostasJogadores;
+    private int respostasRecebidas = 0;
+    private int respostasEquipa[];
 
+    private int ordemRespostas = 0;
 
     public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas) {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
+        this.numPerguntas = numPerguntas;
 
         gameCode = IdCodeGenerator.gerarCodigo();
 
         this.equipas = new Team[numEquipas];
         this.jogadores = new Player[numEquipas][numJogadoresEquipa];
 
-        this.perguntas = new Pergunta[numEquipas];
-
-        this.respostasJogadores = new HashMap<>();
+        this.respostasEquipa = new int[numEquipas];
 
         for(int i = 0; i < numEquipas; i++) {
             equipas[i] = new Team("Equipa " + (i + 1), i + 1);
             for(int j = 0; j < numJogadoresEquipa; j++) {
-                jogadores[i][j] = new Player(j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
+                jogadores[i][j] = new Player(i * numJogadoresEquipa + j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
             }
         }
     }
@@ -49,24 +51,44 @@ public class GameState {
         return numJogadoresEquipa;
     }
 
-    public String getGameCode() {
-        return gameCode;
+    public int getRespostasRecebidas() {
+        return respostasRecebidas;
     }
 
-    public Pergunta[] getPerguntas() {
-        return perguntas;
+    public int getNumPerguntas() {
+        return numPerguntas;
+    }
+
+    public int getOrdemRespostas() {
+        return ordemRespostas;
     }
 
     public int getIndicePerguntaAtual() {
         return indicePerguntaAtual;
     }
 
-    public Team[] getEquipas() {
-        return equipas;
+    public int getTotalJogadores() {
+        return numEquipas * numJogadoresEquipa;
     }
 
-    public Player[][] getJogadores() {
-        return jogadores;
+    public Player[] getJogadoresDaEquipa(int equipaID){
+        int indiceEquipa = equipaID - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length){
+            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
+        }
+        return jogadores[indiceEquipa];
+    }
+
+    public Player getJogador(int equipaId, int jogadorId){
+        int indiceEquipa = equipaId - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length || jogadorId < 0 || jogadorId >= jogadores[indiceEquipa].length){
+            throw new IllegalArgumentException("Equipa ID ou Jogador ID inválido: " + equipaId + ", " + jogadorId);
+        }
+        return jogadores[indiceEquipa][jogadorId];
+    }
+
+    public Team[] getEquipas() {
+        return equipas;
     }
 
     public Pergunta getPerguntaAtual() {
@@ -76,61 +98,88 @@ public class GameState {
         return null;
     }
 
+    public int getEquipaDoJogador(Player jogador){
+        for(int equipa = 0; equipa < equipas.length; equipa++){
+            for(Player p : jogadores[equipa]){
+                if(p.getId() == jogador.getId()){
+                    return equipa + 1;
+                }
+            }
+        }
+        return -1;
+    }
+
+    public void reporRespostasEquipa(){
+        for(int i = 0; i < respostasEquipa.length; i++) {
+            respostasEquipa[i] = 0;
+        }
+    }
+
+    public void reporOpcoesEscolhidas(){
+        for(int i = 0; i < jogadores.length; i++) {
+            for(int j = 0; j < jogadores[i].length; j++) {
+                jogadores[i][j].resetOpcaoEscolhida();
+            }
+        }
+    }
+
+    public void incrementarIndicePerguntaAtual(){
+        indicePerguntaAtual++;
+    }
+
+    public void incrementarOrdemRespostas(){
+        ordemRespostas++;
+    }
+
+
+    public void setPerguntas(Pergunta[] perguntas) {
+        this.perguntas = perguntas;
+    }
+
     public boolean acabouJogo() {
         return indicePerguntaAtual >= perguntas.length;
     }
 
-    private void limparRespostas() {
-        respostasJogadores.clear();
+    public synchronized int registarRespostaIndividual(){
+        incrementarOrdemRespostas();
+        respostasRecebidas++;
+        return ordemRespostas;
     }
 
-    public boolean avancarProximaPergunta(){
+    public synchronized void registarRespostaEquipa(int equipaID){
+        int indiceEquipa = equipaID - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= numEquipas){
+            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
+        }
+        respostasEquipa[indiceEquipa]++;
+    }
+
+    public void avancarParaProximaPergunta(){
         indicePerguntaAtual++;
-        if(acabouJogo()){
-            return false;
-        }
-        limparRespostas();
-        return true;
+        reporRespostas();
     }
 
-    public boolean registrarResposta(Player jogador, int opcaoEscolhida) {
-        if(respostasJogadores.containsKey(jogador)) {
-            return false;
-        }
-        respostasJogadores.put(jogador, opcaoEscolhida);
-        return true;
+    public void reporRespostas() {
+        respostasRecebidas = 0;
+        ordemRespostas = 0;
+        reporOpcoesEscolhidas();
+        reporRespostasEquipa();
     }
 
-    public boolean respostaCorreta(Player jogador) {
-        if(!respostasJogadores.containsKey(jogador)) {
-            return false;
-        }
-        Pergunta perguntaAtual = getPerguntaAtual();
-        int opcaoEscolhida = respostasJogadores.get(jogador);
-        return perguntaAtual.verificarResposta(opcaoEscolhida);
-    }
-
-    public boolean todasRespostasRecebidas(){
-        int totalJogadores = numEquipas * numJogadoresEquipa;
-        if(respostasJogadores.size() >= totalJogadores){
-            return true;
-        }
-        return false;
-    }
-
-    public boolean equipaRespondeu(int equipaID){
-        int count = 0;
-        for(Player jogador : jogadores[equipaID]){
-            if(respostasJogadores.containsKey(jogador)){
-                count++;
+    public Player ocuparSlotJogador(int equipaId, String nomeJogador) {
+        Player[] equipa = jogadores[equipaId - 1];
+        for (Player jogador : equipa) {
+            if (!jogador.isJogadorConectado()) {
+                jogador.jogadorAtivo(nomeJogador);
+                return jogador;
             }
         }
-        if(count == numJogadoresEquipa){
-            return true;
-        }
-        return false;
+        return null;
     }
 
-
+    public void desconectarJogador(int equipaId, int jogadorId) {
+        Player jogador = getJogador(equipaId, jogadorId);
+        jogador.desconectarJogador();
+    }
 
 }
