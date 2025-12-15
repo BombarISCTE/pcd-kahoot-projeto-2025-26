@@ -166,7 +166,7 @@ public class TUI {
                 System.out.println("No game with code " + code);
                 return;
             }
-            game.printGameStats();
+            //game.printGameStats(); todo
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid game code.");
         }
