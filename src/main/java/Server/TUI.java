@@ -167,7 +167,6 @@ public class TUI {
                 return;
             }
 
-            // Try to call Game.GameStatistics.printStats(GameState) via reflection if available
             try {
                 Class<?> statsClass = Class.forName("Game.GameStatistics");
                 Method printMethod = statsClass.getMethod("printStats", GameState.class);
