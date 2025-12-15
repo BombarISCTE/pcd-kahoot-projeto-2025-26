@@ -86,8 +86,12 @@ public class Client implements Runnable, Serializable {
                         System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
                     }
 
-                } catch (IOException | ClassNotFoundException e) {
-                    System.err.println("Erro ao receber mensagem do servidor: " + e.getMessage());
+                } catch (IOException e) {
+                    System.err.println("IOEXCEPTION - Erro ao receber mensagem do servidor: " + e.getMessage());
+                    closeEverything();
+                    break;
+                } catch (ClassNotFoundException e) {
+                    System.err.println("CLASSNOTFOUND - Erro ao receber mensagem do servidor: " + e.getMessage());
                     closeEverything();
                     break;
                 }
