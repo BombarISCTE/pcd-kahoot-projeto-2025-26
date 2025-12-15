@@ -1,14 +1,12 @@
 package Server;
 
 import Client.Client;
-import Game.GameState;
-import Utils.Messages.*;
 
+import Utils.Records.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 public class ClientHandler extends Thread {
 
@@ -16,56 +14,46 @@ public class ClientHandler extends Thread {
     private Socket socket;
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
-    private Client client;
+    private ClientConnect client;
     private int gameId; // associated game state -> nao faria sentido clientes receberem mensagens de outros jogos
-    private Map<String, GameState> gameStates = new ConcurrentHashMap<>();
+    //private Map<String, GameState> gameStates = new HashMap<>();
 
 
-    public ClientHandler(Socket socket) {
-        try {
+    public ClientHandler(Socket socket) throws IOException, ClassNotFoundException {
             this.socket = socket;
-
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             this.objectOutputStream.flush();
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
 
-            this.client = (Client) objectInputStream.readObject();
-            this.gameId = client.getGameId();
+            Object line = objectInputStream.readObject(); // bloqueante
+            connectClient(line);
+            this.gameId = client.gameId();
 
-            clientHandlers.add(this);
-            broadcastMessage("SERVER: " + client.getUsername() + " has entered the chat!", gameId);
-        } catch (Exception e) {
-            closeEverything();
-        }
+            synchronized (clientHandlers) {clientHandlers.add(this);}
+
+            broadcastMessage("SERVER: " + client.username() + " has entered the chat!", gameId);
+
     }
 
     @Override
     public void run() {
-        Object message;
-        while (socket != null && socket.isConnected()) {
-            try {
-                message = objectInputStream.readObject();
+        try {
+            while (socket != null && !socket.isClosed()) {
+                Object message = objectInputStream.readObject(); // bloqueante
                 handleMessage(message);
-            } catch (IOException | ClassNotFoundException e) {
-                closeEverything();
-                break;
             }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Client disconnected: " + client.username());
+        } finally {
+            closeEverything();
         }
     }
 
-    public void broadcastMessage(Serializable messageToSend, int gameId) {
+    public void broadcastMessage(Serializable message, int gameId) {
         synchronized (clientHandlers) {
-            for (ClientHandler clientHandler : clientHandlers) {
-                try {
-                    if (clientHandler.client != null
-                            && !clientHandler.client.equals(this.client)
-                            && clientHandler.gameId == gameId) {
-
-                        clientHandler.objectOutputStream.writeObject(messageToSend);
-                        clientHandler.objectOutputStream.flush();
-                    }
-                } catch (IOException e) {
-                    clientHandler.closeEverything();
+            for (ClientHandler ch : clientHandlers) {
+                if (ch != this && ch.gameId == gameId) {
+                    ch.sendMessage(message);
                 }
             }
         }
@@ -73,32 +61,30 @@ public class ClientHandler extends Thread {
 
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("SERVER: " + (client != null ? client.getUsername() : "A client") + " has left the chat!", gameId);
+        broadcastMessage("SERVER: " + (client != null ? client.username() : "A client") + " has left the chat!", gameId);
     }
 
     public void closeEverything() {
-        removeClientHandler();
-        try {
+        try { synchronized (clientHandlers) {clientHandlers.remove(this);}
+
             if (objectInputStream != null) objectInputStream.close();
-        } catch (IOException ignored) {}
-        try {
             if (objectOutputStream != null) objectOutputStream.close();
-        } catch (IOException ignored) {}
-        try {
-            if (socket != null) socket.close();
+            if (socket != null && !socket.isClosed()) socket.close();
+
+            broadcastMessage("SERVER: " + client.username() + " has left the game ", gameId);
         } catch (IOException ignored) {}
     }
 
-    public void connectClient(String line) {  //java clienteKahoot IP PORT Jogo Equipa Username
-        String [] args = line.split(" ");
-        if (args.length == 5) {
-            this.client = new Client(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4]);
+    public void connectClient(Object line) {  //java clienteKahoot IP PORT Jogo Equipa Username
+        if(line instanceof ClientConnect connect) {
+            this.client = connect;
+            this.gameId = connect.gameId();
         } else {
             refuseConnection(client);
         }
     }
 
-    public void refuseConnection(Client client) {
+    public void refuseConnection(ClientConnect client) {
         try {
             if (objectOutputStream != null) {
                 objectOutputStream.writeObject("Connection refused: Invalid arguments.");
@@ -116,23 +102,30 @@ public class ClientHandler extends Thread {
                 objectOutputStream.flush();
             }
         } catch (IOException e) {
+            System.err.println("Erro ao enviar mensagem para " + client.username());
             closeEverything();
         }
     }
 
 
     private void handleMessage(Object message) {
-        switch (message) {
-//            case ClientConnectAck joined -> handleClientConnectAck(joined);
-//            case SendQuestion sq -> handleSendQuestion(sq);
-//            case SendRoundStats srs -> handleSendRoundStats(srs);
-//            case SendFinalScores sfs -> handleSendFinalScores(sfs);
-            case ClientConnectAck joined -> broadcastMessage(joined, gameId);
-            case SendQuestion sm -> broadcastMessage(sm, gameId);
-            case SendRoundStats srs -> broadcastMessage(srs, gameId);
-            case SendFinalScores sfs -> broadcastMessage(sfs, gameId);
+        if (message instanceof GameStarted ){
+            broadcastMessage((GameStarted) message, gameId);
 
-            default -> System.out.println("Mensagem desconhecida recebida: " + message);
+        } else if (message instanceof ClientConnectAck ack) {
+            broadcastMessage(ack, gameId);
+
+        } else if (message instanceof SendQuestion sq) {
+            broadcastMessage(sq, gameId);
+
+        } else if (message instanceof SendRoundStats srs) {
+            broadcastMessage(srs, gameId);
+
+        } else if (message instanceof SendFinalScores sfs) {
+            broadcastMessage(sfs, gameId);
+
+        } else {
+            System.out.println("Mensagem desconhecida recebida: " + message);
         }
     }
 

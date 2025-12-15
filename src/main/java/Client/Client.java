@@ -2,9 +2,13 @@ package Client;
 
 
 import Utils.Constants;
-import Utils.Messages.*;
+import Utils.Records.ClientConnect;
+import Utils.Records.SendQuestion;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
@@ -25,6 +29,13 @@ public class Client implements Runnable, Serializable {
     public Client(String serverIP, int serverPort, int gameId, int teamId, String username) {
         this.serverIP = serverIP;
         this.serverPort = serverPort;
+        this.gameId = gameId;
+        this.teamId = teamId;
+        this.username = username;
+    }
+    public Client(int gameId, int teamId, String username) {
+        this.serverIP = Constants.SERVER_IP;
+        this.serverPort = Constants.SERVER_PORT;
         this.gameId = gameId;
         this.teamId = teamId;
         this.username = username;
@@ -63,12 +74,12 @@ public class Client implements Runnable, Serializable {
                     Object msg = objectIn.readObject();
 
                     if (msg instanceof SendQuestion sq) {
-                        System.out.println("Pergunta #" + sq.getQuestionNumber() + ": " + sq.getQuestion());
-                        String[] options = sq.getOptions();
+                        System.out.println("Pergunta #" + sq.questionNumber() + ": " + sq.question());
+                        String[] options = sq.options();
                         for (int i = 0; i < options.length; i++) {
                             System.out.println((i + 1) + ". " + options[i]);
                         }
-                        System.out.println("Tempo limite: " + sq.getTimeLimit() + "s");
+                        System.out.println("Tempo limite: " + sq.timeLimit() + "s");
                     } else if (msg instanceof String s) {
                         System.out.println("Mensagem do servidor: " + s);
                     } else {

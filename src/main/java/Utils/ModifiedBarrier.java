@@ -1,7 +1,5 @@
 package Utils;
 
-import Game.DealWithTeamAnswers;
-
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;

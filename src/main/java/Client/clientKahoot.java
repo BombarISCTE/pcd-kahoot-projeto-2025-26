@@ -1,9 +1,6 @@
 package Client;
 
 import Game.Pergunta;
-import Game.Team;
-
-import java.net.Socket;
 
 public class clientKahoot {
 

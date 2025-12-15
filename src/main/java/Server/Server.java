@@ -2,19 +2,18 @@ package Server;
 
 
 import Game.GameState;
-import Game.Pergunta;
 import Utils.Constants;
 
-import java.io.*;
-import java.net.*;
-
-import java.util.ArrayList;
-import java.util.Scanner;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
     private static final int PORT = Constants.SERVER_PORT;
     private ServerSocket serverSocket;
-    private ArrayList<GameState> gameList = new ArrayList<>();
+    private final Map<Integer, GameState> games = new HashMap<>(); //ou usar ConcurrentHashMap e nao usar synchronized
     private boolean isRunning;
 
 
@@ -43,6 +42,8 @@ public class Server {
             closeServerSocket();
             e.printStackTrace();
 
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -69,41 +70,24 @@ public class Server {
         }
     }
 
-    public synchronized boolean isRunning(){
-        return isRunning;
-    }
+    public synchronized boolean isRunning(){return isRunning;}
 
-    public synchronized GameState getGame(int codigoJogo) {
-        for (GameState game : gameList) {
-            if (game.getGameCode() == codigoJogo) {
-                return game;
-            }
-        }
-        System.out.println("Jogo com codigo " + codigoJogo + " nao encontrado.");
-        return null;
-    }
+    public synchronized GameState getGame(int gameId) {return games.get(gameId);}
 
-    public synchronized void addGame(GameState game) {
-        if(!gameList.contains(game)) {
-            int gameId = gameList.size() + +1;
-            gameList.add(game);
-        }
-    }
+    public synchronized void addGame(GameState game) {games.put(game.getGameCode(), game);}
 
-    public synchronized void removeGame(int gameId) {
-        gameList.removeIf(game -> game.getGameCode() == gameId);
-    }
+    public synchronized void removeGame(int gameId) {games.remove(gameId);}
 
     public synchronized int createGameId(){
-        return gameList.size() + 1;
+        return games.size() + 1;
     }
 
     public synchronized void listGames() {
-        if (gameList.isEmpty()) {
+        if (games.isEmpty()) {
             System.out.println("No active games.");
         } else {
             System.out.println("Active games:");
-            for (GameState game : gameList) {
+            for (GameState game : games.values()) {
                 System.out.println(game);
             }
         }
@@ -115,5 +99,8 @@ public class Server {
         Server server = new Server();
         server.startServer();
     }
+
+
+
 
 }

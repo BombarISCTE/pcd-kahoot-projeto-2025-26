@@ -4,7 +4,6 @@ import Game.GameState;
 import Game.Pergunta;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Scanner;
 
 /*
@@ -95,17 +94,15 @@ public class TUI {
             int numEquipas = Integer.parseInt(scanner.nextLine().trim());
             System.out.print("Players per team: ");
             int jogadoresPorEquipa = Integer.parseInt(scanner.nextLine().trim());
-            System.out.print("Number of questions: ");
-            int numPerguntas = Integer.parseInt(scanner.nextLine().trim());
-            if (numEquipas < 1 || jogadoresPorEquipa < 1 || numPerguntas < 1) {
+
+            if (numEquipas < 1 || jogadoresPorEquipa < 1) {
                 System.out.println("All numbers must be >= 1.");
                 return;
             }
 
             int code = server.createGameId();
-            GameState game = new GameState(numEquipas, jogadoresPorEquipa, numPerguntas, code);
-
-            System.out.print("Optional: questions file name (e.g. file.json) [Enter to skip]: ");
+            GameState game = new GameState(numEquipas, jogadoresPorEquipa, code);
+            System.out.print("Enter questions file name: ");
             String fileName = scanner.nextLine().trim();
 
             if (!fileName.isEmpty()) {

@@ -1,11 +1,13 @@
 package Utils;
 
+import Game.Pergunta;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 
-public class Messages {
+public class Records {
 
 
     public record ClientConnect(String username, int gameId, int teamId) implements Serializable {
@@ -27,35 +29,10 @@ public class Messages {
         public int getGameId() { return gameId; }
     }
 
-
-//    public record SendQuestion(int questionNumber, String question, List<String> options,
-//                               int timeLimit) implements Serializable {
-//    }
-
-    public class SendQuestion implements Serializable {
-
-        private final String question;
-        private final String[] options;
-        private final int questionNumber;
-        private final int timeLimit;
-
-        public SendQuestion(String question, String[] options, int questionNumber, int timeLimit) {
-            this.question = question;
-            this.options = options;
-            this.questionNumber = questionNumber;
-            this.timeLimit = timeLimit;
-        }
-
-        public String getQuestion() {return question;}
-
-        public String[] getOptions() {return options;}
-
-        public int getQuestionNumber() {return questionNumber;}
-
-        public int getTimeLimit() {return timeLimit;}
+    public record RoundResult(boolean roundEnded, boolean gameEnded, Map<String, Integer> playerScores, Pergunta nextQuestion) implements Serializable { }
 
 
-    }
+    public record SendQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable { }
 
     /**
      * @param playerScores username -> pontuação
