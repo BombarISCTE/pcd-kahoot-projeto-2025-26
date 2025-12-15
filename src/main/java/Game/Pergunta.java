@@ -71,6 +71,8 @@ public class Pergunta {
             }
         }
         newPath.append(".json");
+        System.out.println(filePath);
+        System.out.println(newPath);
         return String.valueOf(newPath);
     }
 
@@ -112,7 +114,7 @@ public class Pergunta {
 
     public static void main(String[] args) {
 
-        String path = "src/main/java/Game/file.txt";
+        String path = "src/main/resources/Perguntas/FicheiroComPerguntas.txt";
         String jsonPath = convertTxtToJsonPath(path);
 
         try{
