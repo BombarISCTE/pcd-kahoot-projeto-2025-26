@@ -1,10 +1,5 @@
 package Game;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 public class GameState {
 
     //private final String gameCode;
@@ -15,15 +10,7 @@ public class GameState {
     private int numPerguntas;
 
     private Team[] equipas;
-    // private Player[][] jogadores;
-
-    // New structures: keep players by username and by team (0-based team IDs)
-    private final Map<String, Player> jogadoresMap = new ConcurrentHashMap<>(); // username -> Player
-    private final Map<Integer, List<Player>> jogadoresPorEquipa = new ConcurrentHashMap<>(); // teamId(0-based) -> list of Players
-    // quick map username -> teamId for O(1) lookup
-    private final Map<String, Integer> jogadorParaEquipa = new ConcurrentHashMap<>();
-
-    private int nextPlayerId = 0;
+    private Player[][] jogadores;
 
     private Pergunta[] perguntas;
     private int indicePerguntaAtual = 0;
@@ -42,18 +29,15 @@ public class GameState {
         this.gameCode = gameCode;
 
         this.equipas = new Team[numEquipas];
-        //this.jogadores = new Player[numEquipas][numJogadoresEquipa];
+        this.jogadores = new Player[numEquipas][numJogadoresEquipa];
 
         this.respostasEquipa = new int[numEquipas];
 
         for(int i = 0; i < numEquipas; i++) {
-            // use 0-based teamCode
-            equipas[i] = new Team("Equipa " + (i + 1), i);
-            jogadoresPorEquipa.put(i, new ArrayList<>());
-            // previously we precreated Player slots; now we create players when they join/ocuparSlotJogador
-            // for(int j = 0; j < numJogadoresEquipa; j++) {
-            //     jogadores[i][j] = new Player(i * numJogadoresEquipa + j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
-            // }
+            equipas[i] = new Team("Equipa " + (i + 1), i + 1);
+            for(int j = 0; j < numJogadoresEquipa; j++) {
+                jogadores[i][j] = new Player(i * numJogadoresEquipa + j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
+            }
         }
     }
 
@@ -85,26 +69,20 @@ public class GameState {
         return numEquipas * numJogadoresEquipa;
     }
 
-    // Return an array of players for a given team (0-based teamId). If team has empty slots, the returned array may be smaller than numJogadoresEquipa
     public Player[] getJogadoresDaEquipa(int equipaID){
-        if(equipaID < 0 || equipaID >= numEquipas){
+        int indiceEquipa = equipaID - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length){
             throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
         }
-        List<Player> lista = jogadoresPorEquipa.get(equipaID);
-        if(lista == null) return new Player[0];
-        return lista.toArray(new Player[0]);
+        return jogadores[indiceEquipa];
     }
 
-    // keep the same semantics: jogadorId is index inside the team's list (0-based)
     public Player getJogador(int equipaId, int jogadorId){
-        if(equipaId < 0 || equipaId >= numEquipas) {
-            throw new IllegalArgumentException("Equipa ID inválido: " + equipaId);
-        }
-        List<Player> lista = jogadoresPorEquipa.get(equipaId);
-        if(lista == null || jogadorId < 0 || jogadorId >= lista.size()){
+        int indiceEquipa = equipaId - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length || jogadorId < 0 || jogadorId >= jogadores[indiceEquipa].length){
             throw new IllegalArgumentException("Equipa ID ou Jogador ID inválido: " + equipaId + ", " + jogadorId);
         }
-        return lista.get(jogadorId);
+        return jogadores[indiceEquipa][jogadorId];
     }
 
     public Team[] getEquipas() {
@@ -112,7 +90,6 @@ public class GameState {
     }
 
     public Pergunta getPerguntaAtual() {
-        if(perguntas == null) return null;
         if(indicePerguntaAtual < perguntas.length) {
             return perguntas[indicePerguntaAtual];
         }
@@ -120,29 +97,14 @@ public class GameState {
     }
 
     public int getEquipaDoJogador(Player jogador){
-        if(jogador == null) return -1;
-        // try fast path using name -> team map
-        String name = jogador.getName();
-        if(name != null) {
-            Integer t = jogadorParaEquipa.get(name);
-            if(t != null) return t;
-        }
-        // fallback: search lists
-        for(int equipa = 0; equipa < numEquipas; equipa++){
-            List<Player> lista = jogadoresPorEquipa.get(equipa);
-            if(lista == null) continue;
-            for(Player p : lista){
+        for(int equipa = 0; equipa < equipas.length; equipa++){
+            for(Player p : jogadores[equipa]){
                 if(p.getId() == jogador.getId()){
-                    return equipa;
+                    return equipa + 1;
                 }
             }
         }
         return -1;
-    }
-
-    public int getEquipaDoJogador(String username) {
-        if(username == null) return -1;
-        return jogadorParaEquipa.getOrDefault(username, -1);
     }
 
     public void reporRespostasEquipa(){
@@ -152,8 +114,10 @@ public class GameState {
     }
 
     public void reporOpcoesEscolhidas(){
-        for(Player p : jogadoresMap.values()) {
-            p.resetOpcaoEscolhida();
+        for(int i = 0; i < jogadores.length; i++) {
+            for(int j = 0; j < jogadores[i].length; j++) {
+                jogadores[i][j].resetOpcaoEscolhida();
+            }
         }
     }
 
@@ -171,7 +135,6 @@ public class GameState {
     }
 
     public boolean acabouJogo() {
-        if(perguntas == null) return true;
         return indicePerguntaAtual >= perguntas.length;
     }
 
@@ -182,10 +145,11 @@ public class GameState {
     }
 
     public synchronized void registarRespostaEquipa(int equipaID){
-        if(equipaID < 0 || equipaID >= numEquipas){
+        int indiceEquipa = equipaID - 1;
+        if(indiceEquipa < 0 || indiceEquipa >= numEquipas){
             throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
         }
-        respostasEquipa[equipaID]++;
+        respostasEquipa[indiceEquipa]++;
     }
 
     public void avancarParaProximaPergunta(){
@@ -200,19 +164,15 @@ public class GameState {
         reporRespostasEquipa();
     }
 
-    // Try to occupy a slot in the given team (0-based). Returns the created Player (with username assigned) or null if no slot available.
     public Player ocuparSlotJogador(int equipaId, String nomeJogador) {
-        if(equipaId < 0 || equipaId >= numEquipas) return null;
-        List<Player> lista = jogadoresPorEquipa.get(equipaId);
-        if(lista == null) return null;
-        if(lista.size() >= numJogadoresEquipa) return null; // no free slot
-
-        Player p = new Player(nextPlayerId++, nomeJogador);
-        p.jogadorAtivo(nomeJogador);
-        lista.add(p);
-        jogadoresMap.put(nomeJogador, p);
-        jogadorParaEquipa.put(nomeJogador, equipaId);
-        return p;
+        Player[] equipa = jogadores[equipaId - 1];
+        for (Player p : equipa) {
+            if (!p.isJogadorConectado()) {
+                p.jogadorAtivo(nomeJogador);
+                return p;
+            }
+        }
+        return null;
     }
 
     @Override
