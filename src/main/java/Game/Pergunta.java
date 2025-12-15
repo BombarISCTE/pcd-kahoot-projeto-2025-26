@@ -71,8 +71,6 @@ public class Pergunta {
             }
         }
         newPath.append(".json");
-        System.out.println(filePath);
-        System.out.println(newPath);
         return String.valueOf(newPath);
     }
 

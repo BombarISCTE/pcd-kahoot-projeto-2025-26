@@ -2,7 +2,9 @@ package Utils;
 
 public class Constants {
 
-    public static final int SERVER_PORT = 1234;
+    public static final int SERVER_PORT = 8008;
+
+    public static final int CLIENT_PORT = 50000;
 
     public static final String SERVER_IP = "localhost";
 

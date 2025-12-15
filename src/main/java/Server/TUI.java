@@ -65,6 +65,11 @@ public class TUI {
                         handleCheckGameStats();
                         break;
 
+                    case "start":
+                    case "startgame":
+                        handleStartGame();
+                        break;
+
                     case "exit":
                     case "quit":
                         System.out.println("Exiting TUI.");
@@ -117,6 +122,23 @@ public class TUI {
 
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid number format, aborted creation.");
+        }
+    }
+
+    private void handleStartGame() {
+        try {
+            System.out.print("Enter gameId to start: ");
+            String s = scanner.nextLine().trim();
+            int code = Integer.parseInt(s);
+            GameState game = server.getGame(code);
+            if (game == null) {
+                System.out.println("No game with code " + code);
+                return;
+            }
+            //game.startGame();
+            System.out.println("Game " + code + " started.");
+        } catch (NumberFormatException nfe) {
+            System.out.println("Invalid game code.");
         }
     }
 

@@ -18,6 +18,14 @@ public class SendQuestion implements Serializable {
         this.questionNumber = questionNumber;
     }
 
+    public String getQuestion() {return question;}
+
+    public String[] getOptions() {return options;}
+
+    public int getQuestionNumber() {return questionNumber;}
+
+    public int getTimeLimit() {return timeLimit;}
+
 
 
 }

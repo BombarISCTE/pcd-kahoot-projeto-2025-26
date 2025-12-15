@@ -2,6 +2,7 @@ package Server;
 
 import Client.Client;
 import Game.GameState;
+import Messages.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -19,13 +20,11 @@ public class ClientHandler extends Thread {
     public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
-            this.gameId = gameId;
-            // create ObjectOutputStream first to avoid stream header deadlock
+
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             this.objectOutputStream.flush();
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
 
-            // read initial Client object sent by the client
             this.client = (Client) objectInputStream.readObject();
             this.gameId = client.getGameId();
 
@@ -38,13 +37,11 @@ public class ClientHandler extends Thread {
 
     @Override
     public void run() {
-        Object messageFromClient;
+        Object message;
         while (socket != null && socket.isConnected()) {
             try {
-                messageFromClient = objectInputStream.readObject();
-                if (messageFromClient != null) {
-                    broadcastMessage(messageFromClient, gameId);
-                }
+                message = objectInputStream.readObject();
+                handleMessage(message);
             } catch (IOException | ClassNotFoundException e) {
                 closeEverything();
                 break;
@@ -52,7 +49,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    public void broadcastMessage(Object messageToSend, int gameId) {
+    public void broadcastMessage(Serializable messageToSend, int gameId) {
         synchronized (clientHandlers) {
             for (ClientHandler clientHandler : clientHandlers) {
                 try {
@@ -90,8 +87,8 @@ public class ClientHandler extends Thread {
 
     public void connectClient(String line) {  //java clienteKahoot IP PORT Jogo Equipa Username
         String [] args = line.split(" ");
-        if (args.length == 4) {
-            this.client = new Client(socket, args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4]);
+        if (args.length == 5) {
+            this.client = new Client(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4]);
         } else {
             refuseConnection();
         }
@@ -108,8 +105,32 @@ public class ClientHandler extends Thread {
         }
     }
 
+    public void sendMessage(Serializable message) {
+        try {
+            if (objectOutputStream != null) {
+                objectOutputStream.writeObject(message);
+                objectOutputStream.flush();
+            }
+        } catch (IOException e) {
+            closeEverything();
+        }
+    }
+
 //    void setGameId(int gameId) { //package-private para so ser acessivel pelo Server
 //        this.gameId = gameId;
 //    }
+
+    private void handleMessage(Object message) {
+        switch (message) {
+            case ClientJoined joined -> handleClientJoined(joined);
+            case SendQuestion sq -> handleSendQuestion(sq);
+            case ChatMessage cm -> handleChatMessage(cm);
+            case String s -> handleStringMessage(s);
+            // adiciona mais casos aqui conforme novos tipos de mensagens
+            default -> System.out.println("Mensagem desconhecida recebida: " + message);
+        }
+    }
+
+
 
 }

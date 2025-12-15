@@ -2,6 +2,8 @@ package Server;
 
 
 import Game.GameState;
+import Game.Pergunta;
+import Messages.*;
 import Utils.Constants;
 
 import java.io.*;
@@ -97,6 +99,15 @@ public class Server {
             }
         }
     }
+
+    public SendQuestion buildSendQuestion(Pergunta p, int questionNumber) {
+        return new SendQuestion(
+                p.getQuestao(),
+                p.getOpcoes(),
+                questionNumber
+        );
+    }
+
 
     public static void main(String[] args) throws IOException {
         Server server = new Server();
