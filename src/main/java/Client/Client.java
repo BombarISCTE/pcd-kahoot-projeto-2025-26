@@ -1,6 +1,7 @@
 package Client;
 
 
+import Utils.Constants;
 import Utils.Messages.*;
 
 import java.io.*;
@@ -115,10 +116,8 @@ public class Client implements Runnable, Serializable {
     // Exemplo de main para teste
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        System.out.print("Enter server IP: ");
-        String ip = sc.nextLine();
-        System.out.print("Enter server port: ");
-        int port = Integer.parseInt(sc.nextLine());
+        String ip = Constants.SERVER_IP;
+        int port = Constants.SERVER_PORT;
         System.out.print("Enter game ID: ");
         int gameId = Integer.parseInt(sc.nextLine());
         System.out.print("Enter team ID: ");

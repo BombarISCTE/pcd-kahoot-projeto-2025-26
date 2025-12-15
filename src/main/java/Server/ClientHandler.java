@@ -7,6 +7,8 @@ import Utils.Messages.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientHandler extends Thread {
 
@@ -16,6 +18,8 @@ public class ClientHandler extends Thread {
     private ObjectOutputStream objectOutputStream;
     private Client client;
     private int gameId; // associated game state -> nao faria sentido clientes receberem mensagens de outros jogos
+    private Map<String, GameState> gameStates = new ConcurrentHashMap<>();
+
 
     public ClientHandler(Socket socket) {
         try {
@@ -90,11 +94,11 @@ public class ClientHandler extends Thread {
         if (args.length == 5) {
             this.client = new Client(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4]);
         } else {
-            refuseConnection();
+            refuseConnection(client);
         }
     }
 
-    public void refuseConnection() {
+    public void refuseConnection(Client client) {
         try {
             if (objectOutputStream != null) {
                 objectOutputStream.writeObject("Connection refused: Invalid arguments.");
@@ -116,9 +120,6 @@ public class ClientHandler extends Thread {
         }
     }
 
-//    void setGameId(int gameId) { //package-private para so ser acessivel pelo Server
-//        this.gameId = gameId;
-//    }
 
     private void handleMessage(Object message) {
         switch (message) {

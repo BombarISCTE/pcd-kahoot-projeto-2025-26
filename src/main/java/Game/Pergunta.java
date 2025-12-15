@@ -10,16 +10,9 @@ public class Pergunta {
     private int points;
     private int correct;
 
-    private static final int MAX_TIMER = 30; //segundos
-
-    //utilizar uma lista de strings para as opcoes pois é mais flexivel da ap ra adicionar mais opcoes se necessario ou remover, e é mais moderno e facil de usar:
-    //um array de string é mais antigo e menos flexivel iriamos ter de ter sempre o mesmo numero de respostas possiveis
-    //private List<String> opcoes;
-
-    //o array de strings é mais simples de implementar e entender para este caso especifico, onde o numero de opcoes é fixo (4 opcoes)
     private String[] options;
 
-    public Pergunta(String question,  int correct,int points, /*List<String> options*/ String[] options) {
+    public Pergunta(String question,  int correct,int points, String[] options) {
         this.question = question;
         this.points = points;
         this.correct = correct;
@@ -43,9 +36,8 @@ public class Pergunta {
     }
 
 
-    public boolean verificarResposta(int opcaoEscolhida) {return correct == opcaoEscolhida;}
+    public boolean verificarResposta(int opcaoEscolhida) {return correct == opcaoEscolhida;} //é opcaoEscolhida é um int
 
-    public int getMaxTimer() {return MAX_TIMER;}
 
     @Override
     public String toString() {

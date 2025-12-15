@@ -51,6 +51,7 @@ public class TUI {
 
                     case "listgames":
                     case "list":
+                    case "ls":
                         server.listGames();
                         break;
 
@@ -73,6 +74,7 @@ public class TUI {
                     case "exit":
                     case "quit":
                         System.out.println("Exiting TUI.");
+                        System.out.println("this does not stop the server, just the TUI.");
                         return;
 
                     default:
@@ -164,19 +166,7 @@ public class TUI {
                 System.out.println("No game with code " + code);
                 return;
             }
-
-            // Try to call Game.GameStatistics.printStats(GameState) via reflection if available
-            try {
-                Class<?> statsClass = Class.forName("Game.GameStatistics");
-                Method printMethod = statsClass.getMethod("printStats", GameState.class);
-                printMethod.invoke(null, game);
-            } catch (ClassNotFoundException | NoSuchMethodException cnfe) {
-                // fallback: print basic GameState info
-                System.out.println("Game statistics not available. Falling back to state summary:");
-                System.out.println(game.toString());
-            } catch (Exception e) {
-                System.out.println("Error invoking GameStatistics: " + e.getMessage());
-            }
+            game.printGameStats();
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid game code.");
         }

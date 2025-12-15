@@ -15,29 +15,34 @@ public class Server {
     private static final int PORT = Constants.SERVER_PORT;
     private ServerSocket serverSocket;
     private ArrayList<GameState> gameList = new ArrayList<>();
+    private boolean isRunning;
 
 
     public Server() throws IOException {
         serverSocket = new ServerSocket(PORT);
+        isRunning = true;
 
     }
 
 
     public void startServer() {
-        startTUI();
+        startTUI(); // iniciar a TUI numa thread separada
 
         try {
-            while (!serverSocket.isClosed() && !gameList.isEmpty()) {
+            while (!serverSocket.isClosed() && isRunning) {
                 Socket socket = serverSocket.accept();
                 System.out.println("Server - New client connected: " + socket.getInetAddress().getHostAddress());
                 ClientHandler clientHandler = new ClientHandler(socket);
+
 
                 Thread thread = new Thread(clientHandler);
                 thread.start();
             }
         } catch (IOException e) {
             System.out.println("Erro ao iniciar o servidor: " + e.getMessage());
+            closeServerSocket();
             e.printStackTrace();
+
         }
     }
 
@@ -54,13 +59,18 @@ public class Server {
     }
 
     public void closeServerSocket() {
+        isRunning = false;
         try {
-            if (serverSocket != null){
+            if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public synchronized boolean isRunning(){
+        return isRunning;
     }
 
     public synchronized GameState getGame(int codigoJogo) {
@@ -88,7 +98,7 @@ public class Server {
         return gameList.size() + 1;
     }
 
-    public void listGames() {
+    public synchronized void listGames() {
         if (gameList.isEmpty()) {
             System.out.println("No active games.");
         } else {
@@ -98,6 +108,7 @@ public class Server {
             }
         }
     }
+
 
 
     public static void main(String[] args) throws IOException {

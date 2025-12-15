@@ -27,25 +27,23 @@ public class Messages {
         public int getGameId() { return gameId; }
     }
 
-//    /**
-//     * @param timeLimit segundos
-//     */
+
 //    public record SendQuestion(int questionNumber, String question, List<String> options,
 //                               int timeLimit) implements Serializable {
 //    }
 
-    public record SendQuestion implements Serializable {
+    public class SendQuestion implements Serializable {
 
         private final String question;
         private final String[] options;
         private final int questionNumber;
         private final int timeLimit;
 
-        public SendQuestion(String question, String[] options, int questionNumber) {
+        public SendQuestion(String question, String[] options, int questionNumber, int timeLimit) {
             this.question = question;
             this.options = options;
             this.questionNumber = questionNumber;
-            timeLimit = Constants.TEMPO_LIMITE_QUESTAO;
+            this.timeLimit = timeLimit;
         }
 
         public String getQuestion() {return question;}
@@ -57,20 +55,6 @@ public class Messages {
         public int getTimeLimit() {return timeLimit;}
 
 
-
-    }
-
-    public static class SendNextQuestion implements Serializable {
-        private final int questionNumber;
-        private final SendQuestion question;
-
-        public SendNextQuestion(int questionNumber, SendQuestion question) {
-            this.questionNumber = questionNumber;
-            this.question = question;
-        }
-
-        public int getQuestionNumber() { return questionNumber; }
-        public SendQuestion getQuestion() { return question; }
     }
 
     /**
@@ -87,6 +71,10 @@ public class Messages {
         public int getGameId() { return gameId; }
     }
 
-    public record SendFinalScores(Map<String, Integer> finalScores) implements Serializable {
+    public record SendFinalScores(Map<String, Integer> finalScores) implements Serializable { // username -> pontuação
     }
+
+    public record refuseConnection(String reason) implements Serializable {
+    }
+
 }
