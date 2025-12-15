@@ -15,8 +15,7 @@
         "points": 3,
         "correct": 2,
         "options": [
-            "join ()"," sleep (<millis >)",
-            "interrupted ()"," wait ()"
+            "join ()","sleep (<millis >)","interrupted ()"," wait ()"
         ]
     }
 ]

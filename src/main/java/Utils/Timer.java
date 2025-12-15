@@ -31,20 +31,21 @@ public class Timer extends Thread {
             }
         } catch (InterruptedException e) {
             System.out.println("Timer interrompido!");
+            Thread.currentThread().interrupt();
         }
 
     }
 
 
 
-//    public static void main(String[] args) {
-//        Timer t = new Timer(5); // exemplo com 5 segundos
-//        t.start();
-//        try {
-//            t.join();
-//        } catch (InterruptedException e) {
-//            System.out.println("Main interrompida!");
-//            Thread.currentThread().interrupt();
-//        }
-//    }
+    public static void main(String[] args) {
+        Timer t = new Timer(new ModifiedCountdownLatch(0,0,5,5)); // exemplo com 5 segundos
+        t.start();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            System.out.println("Main interrompida!");
+            Thread.currentThread().interrupt();
+        }
+    }
 }

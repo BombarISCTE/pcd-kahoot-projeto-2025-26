@@ -1,158 +1,129 @@
 package Client;
 
-import Game.*;
 import Messages.*;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class Client {
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
+public class Client implements Runnable, Serializable {
+
     private Socket socket;
+    private ObjectOutputStream objectOut;
+    private ObjectInputStream objectIn;
 
-    private final String IP;
-    private final int PORT;
+    private String serverIP;
+    private int serverPort;
 
-    private final String codigoJogo;
-    private final int equipaId;
-    private String nomeJogador;
-    private int jogadorId = -1;
-    private ClientListener listener;
+    private int gameId;
+    private int teamId;
+    private String username;
 
-    public Client (String IP , int port, String codigoJogo, int equipaId, String nomeJogador) {
-        this.IP = IP;
-        this.PORT = port;
-        this.codigoJogo = codigoJogo;
-        this.equipaId = equipaId;
-        this.nomeJogador = nomeJogador;
+    public Client(String serverIP, int serverPort, int gameId, int teamId, String username) {
+        this.serverIP = serverIP;
+        this.serverPort = serverPort;
+        this.gameId = gameId;
+        this.teamId = teamId;
+        this.username = username;
     }
 
-    public void runClient(){
-        try{
+    @Override
+    public void run() {
+        try {
             connectToServer();
-            enviarJoinGame();
-            receberMensagens();
-        } catch (Exception e){
-            System.err.println("Erro no cliente");
+            sendMessage(new ClientJoined(username, gameId, teamId));
+            listenForMessages();
+        } catch (Exception e) {
+            System.err.println("Cliente encerrou: " + e.getMessage());
         } finally {
-           disconnect();
+            closeEverything();
         }
     }
 
-    private void connectToServer() {
-        try {
-            InetAddress endereco = InetAddress.getByName(IP);
-            System.out.println("Endereço do servidor: " + endereco.getHostAddress());
+    private void connectToServer() throws IOException {
+        InetAddress address = InetAddress.getByName(serverIP);
+        socket = new Socket(address, serverPort);
+        System.out.println("Conectado ao servidor: " + serverIP + ":" + serverPort);
 
-            socket = new Socket(endereco, PORT);
-            System.out.println("Ligação estabelecida ao servidor: " + IP + ":" + PORT);
-
-            System.out.println("Socket:" + socket);
-            out = new ObjectOutputStream(socket.getOutputStream());
-            out.flush();
-            in = new ObjectInputStream(socket.getInputStream());
-            System.out.println("Ligado ao servidor");
-        }catch (IOException e) {
-            System.err.println("Falha em estabelecer ligação ao servidor: " + IP + " - " + e.getMessage());
-        }
+        // Criar streams de objeto
+        objectOut = new ObjectOutputStream(socket.getOutputStream());
+        objectOut.flush();
+        objectIn = new ObjectInputStream(socket.getInputStream());
     }
 
-    private void enviarJoinGame() {
-        JoinGame joinGame = new JoinGame(codigoJogo, equipaId, nomeJogador);
-        try {
-            out.writeObject(joinGame);
-            out.flush();
-            System.out.println("JoinGame enviado ao servidor");
-        } catch (IOException e) {
-            System.err.println("Erro ao enviar JoinGame");
-        }
-    }
 
-    private void receberMensagens() {
-        while(true){
-            try {
-                Object mensagem = in.readObject();
-                System.out.println("Mensagem recebida do servidor: " + mensagem);
 
-                if(mensagem instanceof JoinGameResponse resposta){
-                    jogadorId = resposta.getJogadorId();
-                    nomeJogador = resposta.getNomeJogador();
-                    System.out.println("Jogador " + jogadorId + " - " + nomeJogador + "entrou no jogo");
-                }
+    private void listenForMessages() {
+        new Thread(() -> {
+            while (socket != null && socket.isConnected()) {
+                try {
+                    Object msg = objectIn.readObject();
 
-                else if(mensagem instanceof NewQuestion novaQuestao){
-                    tratarNovaQuestao(novaQuestao);
-                }
+                    if (msg instanceof SendQuestion sq) {
+                        System.out.println("Pergunta #" + sq.getQuestionNumber() + ": " + sq.getQuestion());
+                        String[] options = sq.getOptions();
+                        for (int i = 0; i < options.length; i++) {
+                            System.out.println((i + 1) + ". " + options[i]);
+                        }
+                        System.out.println("Tempo limite: " + sq.getTimeLimit() + "s");
+                    } else if (msg instanceof String s) {
+                        System.out.println("Mensagem do servidor: " + s);
+                    } else {
+                        System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
+                    }
 
-                else if(mensagem instanceof Statistic estatistica){
-                    tratarEstatistica(estatistica);
-                }
-
-                else if(mensagem instanceof EndGame fimJogo){
-                    tratarFimJogo(fimJogo);
+                } catch (IOException | ClassNotFoundException e) {
+                    System.err.println("Erro ao receber mensagem do servidor: " + e.getMessage());
+                    closeEverything();
                     break;
                 }
-
-            } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Erro ao receber mensagem: " + e.getMessage());
-                break;
             }
-        }
+        }).start();
     }
 
-    public void setListener(ClientListener listener) {
-        this.listener = listener;
-    }
-
-    private void tratarNovaQuestao(NewQuestion novaQuestao) {
-        if(listener != null){
-            listener.onNewQuestion(novaQuestao.getPergunta(), novaQuestao.getOpcoes(), novaQuestao.getNumeroPergunta(), novaQuestao.getTempoLimite(), novaQuestao.getTempoInicio());
-        }
-    }
-
-    private void tratarEstatistica(Statistic estatistica) {
-        if(listener != null){
-            listener.onStatistic(estatistica.getPontosJogadores());
-        }
-    }
-
-    private void tratarFimJogo(EndGame fimJogo) {
-        if(listener != null){
-            listener.onEndGame(fimJogo.getMensagem());
-        }
-    }
-
-    public void enviarResposta(int opcao) {
-        try{
-            Answer resposta = new Answer(jogadorId, equipaId, opcao);
-            out.writeObject(resposta);
-            out.flush();
-            System.out.println("Resposta enviada: " + opcao);
-        }catch (IOException e) {
-            System.err.println("Erro ao enviar resposta");
-        }
-    }
-
-
-    public void disconnect() {
+    public void sendMessage(Serializable message) {
         try {
-            if (socket != null) {
-                socket.close();
+            if (objectOut != null) {
+                objectOut.writeObject(message);
+                objectOut.flush();
             }
-            if (in != null) {
-                in.close();
-            }
-            if (out != null) {
-                out.close();
-            }
-            System.out.println("Desligado do servidor.");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Erro ao enviar mensagem: " + e.getMessage());
+            closeEverything();
         }
     }
 
+    public void closeEverything() {
+        try {
+            if (objectIn != null) objectIn.close();
+            if (objectOut != null) objectOut.close();
+            if (socket != null) socket.close();
+        } catch (IOException ignored) {}
+    }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public int getGameId() {
+        return gameId;
+    }
+
+    // Exemplo de main para teste
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter server IP: ");
+        String ip = sc.nextLine();
+        System.out.print("Enter server port: ");
+        int port = Integer.parseInt(sc.nextLine());
+        System.out.print("Enter game ID: ");
+        int gameId = Integer.parseInt(sc.nextLine());
+        System.out.print("Enter team ID: ");
+        int teamId = Integer.parseInt(sc.nextLine());
+        System.out.print("Enter your username: ");
+        String username = sc.nextLine();
+
+        Client client = new Client(ip, port, gameId, teamId, username);
+        new Thread(client).start();
+    }
 }

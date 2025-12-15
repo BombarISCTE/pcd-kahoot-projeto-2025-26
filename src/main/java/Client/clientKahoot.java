@@ -3,6 +3,8 @@ package Client;
 import Game.Pergunta;
 import Game.Team;
 
+import java.net.Socket;
+
 public class clientKahoot {
 
     public static void main(String[] args) {
@@ -22,9 +24,10 @@ public class clientKahoot {
 //        //client.runClient();
 
         try{
-            Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/java/Game/FicheiroQuestoes.json");
-            ClientGUI gui = new ClientGUI();
-        }catch(Exception e){
+            Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/resources/Perguntas/FicheiroQuestoes.json");
+            Client client = new Client( "localhost", 12345, 123, 1, "Player1");
+            ClientGUI gui = new ClientGUI(client, perguntas);
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }
