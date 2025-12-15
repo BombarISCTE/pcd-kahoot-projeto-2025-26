@@ -1,8 +1,11 @@
 package Client;
 
 
-import Utils.Messages.*;
+import Messages.ClientConnect;
+import Messages.RoundStats;
+import Messages.SendQuestion;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -21,6 +24,8 @@ public class Client implements Runnable, Serializable {
     private int teamId;
     private String username;
 
+    private ClientGUI gui;
+
     public Client(String serverIP, int serverPort, int gameId, int teamId, String username) {
         this.serverIP = serverIP;
         this.serverPort = serverPort;
@@ -32,12 +37,14 @@ public class Client implements Runnable, Serializable {
     @Override
     public void run() {
         try {
+            SwingUtilities.invokeLater(() -> {
+                gui = new ClientGUI(this);
+            });
             connectToServer();
             sendMessage(new ClientConnect(username, gameId, teamId));
             listenForMessages();
         } catch (Exception e) {
             System.err.println("Cliente encerrou: " + e.getMessage());
-        } finally {
             closeEverything();
         }
     }
@@ -61,15 +68,16 @@ public class Client implements Runnable, Serializable {
                 try {
                     Object msg = objectIn.readObject();
 
-                    if (msg instanceof SendQuestion sq) {
-                        System.out.println("Pergunta #" + sq.getQuestionNumber() + ": " + sq.getQuestion());
-                        String[] options = sq.getOptions();
-                        for (int i = 0; i < options.length; i++) {
-                            System.out.println((i + 1) + ". " + options[i]);
-                        }
-                        System.out.println("Tempo limite: " + sq.getTimeLimit() + "s");
-                    } else if (msg instanceof String s) {
-                        System.out.println("Mensagem do servidor: " + s);
+                    if (msg instanceof SendQuestion sendQuestion) {
+                        gui.mostrarPergunta(sendQuestion);
+//                        System.out.println("Pergunta #" + sq.getQuestionNumber() + ": " + sq.getQuestion());
+//                        String[] options = sq.getOptions();
+//                        for (int i = 0; i < options.length; i++) {
+//                            System.out.println((i + 1) + ". " + options[i]);
+//                        }
+//                        System.out.println("Tempo limite: " + sq.getTimeLimit() + "s");
+                    } else if (msg instanceof RoundStats roundStats) {
+                        gui.atualizarPlacar(roundStats.getPontosJogadores());
                     } else {
                         System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
                     }
@@ -130,7 +138,4 @@ public class Client implements Runnable, Serializable {
         new Thread(client).start();
     }
 
-    public int getTeamId() {
-        return teamId;
-    }
 }

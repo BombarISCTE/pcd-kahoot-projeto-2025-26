@@ -1,139 +1,112 @@
 package Server;
 
-import Client.Client;
-import Game.GameState;
-import Utils.Messages.*;
-
+import Messages.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 
 public class ClientHandler extends Thread {
 
-    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>(); // keep track of clients
-    private Socket socket;
-    private ObjectInputStream objectInputStream;
-    private ObjectOutputStream objectOutputStream;
-    private Client client;
-    private int gameId; // associated game state -> nao faria sentido clientes receberem mensagens de outros jogos
+    public static final ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
 
-    public ClientHandler(Socket socket) {
+    private final Socket socket;
+    private final ObjectInputStream in;
+    private final ObjectOutputStream out;
+
+    private final int gameId;
+    private final int teamId;
+    private final String username;
+
+    private final Server server;
+
+    public ClientHandler(Socket socket, Server server) {
+        this.server = server;
+        this.socket = socket;
+
         try {
-            this.socket = socket;
+            this.out = new ObjectOutputStream(socket.getOutputStream());
+            this.out.flush();
+            this.in = new ObjectInputStream(socket.getInputStream());
 
-            this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-            this.objectOutputStream.flush();
-            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+            ClientConnect connect = (ClientConnect) in.readObject();
 
-            this.client = (Client) objectInputStream.readObject();
-            this.gameId = client.getGameId();
+            this.gameId = connect.getGameId();
+            this.teamId = connect.getTeamId();
+            this.username = connect.getUsername();
 
-            clientHandlers.add(this);
-            broadcastMessage("SERVER: " + client.getUsername() + " has entered the chat!", gameId);
+            synchronized (clientHandlers) {
+                clientHandlers.add(this);
+            }
+
+            GameEngine engine = server.getGameEngine(gameId);
+            if (engine == null) {
+                sendMessage("Erro: jogo ainda não iniciado.");
+                closeEverything();
+                throw new IllegalStateException("GameEngine inexistente");
+            }
+
+            engine.registarJogador(teamId, username);
+
+            System.out.println("Cliente ligado: " + username +
+                    " | jogo " + gameId +
+                    " | equipa " + teamId);
+
         } catch (Exception e) {
-            closeEverything();
+            throw new RuntimeException("Erro ao criar ClientHandler", e);
         }
     }
 
     @Override
     public void run() {
-        Object message;
-        while (socket != null && socket.isConnected()) {
-            try {
-                message = objectInputStream.readObject();
-                handleMessage(message);
-            } catch (IOException | ClassNotFoundException e) {
-                closeEverything();
-                break;
+        try {
+            while (!socket.isClosed()) {
+                Object msg = in.readObject();
+                handleMessage(msg);
             }
+        } catch (Exception e) {
+            closeEverything();
         }
     }
 
-    public void broadcastMessage(Serializable messageToSend, int gameId) {
-        synchronized (clientHandlers) {
-            for (ClientHandler clientHandler : clientHandlers) {
-                try {
-                    if (clientHandler.client != null
-                            && !clientHandler.client.equals(this.client)
-                            && clientHandler.gameId == gameId) {
+    private void handleMessage(Object msg) {
+        if (msg instanceof Answer a) {
+            System.out.println("Resposta recebida: " +
+                    a.getUsername() +
+                    " | equipa " + a.getTeamId() +
+                    " | opção " + a.getOpcaoEscolhida());
 
-                        clientHandler.objectOutputStream.writeObject(messageToSend);
-                        clientHandler.objectOutputStream.flush();
-                    }
-                } catch (IOException e) {
-                    clientHandler.closeEverything();
-                }
-            }
-        }
-    }
-
-    public void removeClientHandler() {
-        clientHandlers.remove(this);
-        broadcastMessage("SERVER: " + (client != null ? client.getUsername() : "A client") + " has left the chat!", gameId);
-    }
-
-    public void closeEverything() {
-        removeClientHandler();
-        try {
-            if (objectInputStream != null) objectInputStream.close();
-        } catch (IOException ignored) {}
-        try {
-            if (objectOutputStream != null) objectOutputStream.close();
-        } catch (IOException ignored) {}
-        try {
-            if (socket != null) socket.close();
-        } catch (IOException ignored) {}
-    }
-
-    public void connectClient(String line) {  //java clienteKahoot IP PORT Jogo Equipa Username
-        String [] args = line.split(" ");
-        if (args.length == 5) {
-            this.client = new Client(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4]);
+            server.getGameEngine(gameId)
+                    .registarResposta(
+                            a.getUsername(),
+                            a.getTeamId(),
+                            a.getOpcaoEscolhida()
+                    );
         } else {
-            refuseConnection();
+            System.out.println("Mensagem desconhecida do cliente: " + msg);
         }
     }
 
-    public void refuseConnection() {
+    public void sendMessage(Serializable msg) {
         try {
-            if (objectOutputStream != null) {
-                objectOutputStream.writeObject("Connection refused: Invalid arguments.");
-                objectOutputStream.flush();
-            }
+            out.writeObject(msg);
+            out.flush();
         } catch (IOException e) {
             closeEverything();
         }
     }
 
-    public void sendMessage(Serializable message) {
-        try {
-            if (objectOutputStream != null) {
-                objectOutputStream.writeObject(message);
-                objectOutputStream.flush();
-            }
-        } catch (IOException e) {
-            closeEverything();
+    private void closeEverything() {
+        synchronized (clientHandlers) {
+            clientHandlers.remove(this);
         }
+        try { in.close(); } catch (Exception ignored) {}
+        try { out.close(); } catch (Exception ignored) {}
+        try { socket.close(); } catch (Exception ignored) {}
+
+        System.out.println("Cliente desligado: " + username);
     }
 
-//    void setGameId(int gameId) { //package-private para so ser acessivel pelo Server
-//        this.gameId = gameId;
-//    }
-
-    private void handleMessage(Object message) {
-        switch (message) {
-//            case ClientConnectAck joined -> handleClientConnectAck(joined);
-//            case SendQuestion sq -> handleSendQuestion(sq);
-//            case SendRoundStats srs -> handleSendRoundStats(srs);
-//            case SendFinalScores sfs -> handleSendFinalScores(sfs);
-            case ClientConnectAck joined -> broadcastMessage(joined, gameId);
-            case SendQuestion sm -> broadcastMessage(sm, gameId);
-            case SendRoundStats srs -> broadcastMessage(srs, gameId);
-            case SendFinalScores sfs -> broadcastMessage(sfs, gameId);
-
-            default -> System.out.println("Mensagem desconhecida recebida: " + message);
-        }
+    public int getGameId() {
+        return gameId;
     }
-
-
 }

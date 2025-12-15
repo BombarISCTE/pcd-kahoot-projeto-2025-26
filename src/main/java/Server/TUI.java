@@ -106,10 +106,12 @@ public class TUI {
             System.out.print("Optional: questions file name (e.g. file.json) [Enter to skip]: ");
             String fileName = scanner.nextLine().trim();
 
+            Pergunta[] perguntas = null;
+
             if (!fileName.isEmpty()) {
                 String path = "src/main/resources/Perguntas/" + fileName;
                 try {
-                    Pergunta[] perguntas = Pergunta.lerPerguntas(path);
+                    perguntas = Pergunta.lerPerguntas(path);
                     game.setPerguntas(perguntas);
                     System.out.println("Loaded " + perguntas.length + " questions from " + path);
                 } catch (Exception e) {
@@ -117,7 +119,7 @@ public class TUI {
                 }
             }
 
-            server.addGame(game);
+            server.addGame(game,perguntas);
             System.out.println("Game created with code: " + code);
 
         } catch (NumberFormatException nfe) {

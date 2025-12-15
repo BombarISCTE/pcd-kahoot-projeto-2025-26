@@ -3,18 +3,22 @@ package Server;
 
 import Game.GameState;
 import Game.Pergunta;
+import Messages.SendQuestion;
 import Utils.Constants;
 
 import java.io.*;
 import java.net.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Server {
     private static final int PORT = Constants.SERVER_PORT;
     private ServerSocket serverSocket;
     private ArrayList<GameState> gameList = new ArrayList<>();
+    private final Map<Integer, GameEngine> gameEngines = new HashMap<>();
 
 
     public Server() throws IOException {
@@ -27,10 +31,10 @@ public class Server {
         startTUI();
 
         try {
-            while (!serverSocket.isClosed() && !gameList.isEmpty()) {
+            while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
                 System.out.println("Server - New client connected: " + socket.getInetAddress().getHostAddress());
-                ClientHandler clientHandler = new ClientHandler(socket);
+                ClientHandler clientHandler = new ClientHandler(socket, this);
 
                 Thread thread = new Thread(clientHandler);
                 thread.start();
@@ -73,11 +77,11 @@ public class Server {
         return null;
     }
 
-    public synchronized void addGame(GameState game) {
-        if(!gameList.contains(game)) {
-            int gameId = gameList.size() + +1;
-            gameList.add(game);
-        }
+    public synchronized void addGame(GameState game, Pergunta[] perguntas) {
+        GameEngine gameEngine = new GameEngine(this, game, perguntas);
+        gameList.add(game);
+        gameEngines.put(game.getGameCode(), gameEngine);
+        new Thread(gameEngine).start();
     }
 
     public synchronized void removeGame(int gameId) {
@@ -103,6 +107,20 @@ public class Server {
     public static void main(String[] args) throws IOException {
         Server server = new Server();
         server.startServer();
+    }
+
+    public void broadcastToGame(int gameCode, Object mensagem) {
+        synchronized (ClientHandler.clientHandlers) {
+            for (ClientHandler clientHandler : ClientHandler.clientHandlers) {
+                if (clientHandler.getGameId() == gameCode){
+                    clientHandler.sendMessage((Serializable) mensagem);
+                }
+            }
+        }
+    }
+
+    public synchronized GameEngine getGameEngine(int gameCode) {
+        return gameEngines.get(gameCode);
     }
 
 }
