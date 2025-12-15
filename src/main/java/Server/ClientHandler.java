@@ -1,6 +1,7 @@
 package Server;
 
 import Client.Client;
+import Game.GameState;
 
 import java.io.*;
 import java.net.Socket;
@@ -13,8 +14,9 @@ public class ClientHandler extends Thread {
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
     private Client client;
+    private int gameId; // associated game state -> nao faria sentido clientes receberem mensagens de outros jogos
 
-    public ClientHandler(Socket socket){
+    public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
             // create ObjectOutputStream first to avoid stream header deadlock
@@ -26,7 +28,7 @@ public class ClientHandler extends Thread {
             this.client = (Client) objectInputStream.readObject();
 
             clientHandlers.add(this);
-            broadcastMessage("SERVER: " + client.getUsername() + " has entered the chat!");
+            broadcastMessage("SERVER: " + client.getUsername() + " has entered the chat!", gameId);
         } catch (Exception e) {
             closeEverything();
         }
@@ -39,7 +41,7 @@ public class ClientHandler extends Thread {
             try {
                 messageFromClient = objectInputStream.readObject();
                 if (messageFromClient != null) {
-                    broadcastMessage(messageFromClient);
+                    broadcastMessage(messageFromClient, gameId);
                 }
             } catch (IOException | ClassNotFoundException e) {
                 closeEverything();
@@ -48,11 +50,14 @@ public class ClientHandler extends Thread {
         }
     }
 
-    public void broadcastMessage(Object messageToSend) {
+    public void broadcastMessage(Object messageToSend, int gameId) {
         synchronized (clientHandlers) {
             for (ClientHandler clientHandler : clientHandlers) {
                 try {
-                    if (clientHandler.client != null && !clientHandler.client.equals(this.client)) {
+                    if (clientHandler.client != null
+                            && !clientHandler.client.equals(this.client)
+                            && clientHandler.gameId == gameId) {
+
                         clientHandler.objectOutputStream.writeObject(messageToSend);
                         clientHandler.objectOutputStream.flush();
                     }
@@ -65,7 +70,7 @@ public class ClientHandler extends Thread {
 
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("SERVER: " + (client != null ? client.getUsername() : "A client") + " has left the chat!");
+        broadcastMessage("SERVER: " + (client != null ? client.getUsername() : "A client") + " has left the chat!", gameId);
     }
 
     public void closeEverything() {
@@ -100,4 +105,9 @@ public class ClientHandler extends Thread {
             closeEverything();
         }
     }
+
+    void setGameId(int gameId) { //package-private para so ser acessivel pelo Server
+        this.gameId = gameId;
+    }
+
 }

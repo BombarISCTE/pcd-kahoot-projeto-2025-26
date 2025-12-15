@@ -39,7 +39,7 @@ public class TUI {
             System.out.print("\nChoose option > ");
             String line = scanner.nextLine();
             if (line == null) break;
-            String cmd = line.trim().toLowerCase();
+            String cmd = line.trim().toLowerCase(); // para tornar case-insensitive
             if (cmd.isEmpty()) continue;
 
             try {
@@ -131,7 +131,7 @@ public class TUI {
         }
     }
 
-    private void handleCheckGameStats() {
+    private void handleCheckGameStats() { //todo
         try {
             System.out.print("Enter game code to inspect: ");
             String s = scanner.nextLine().trim();

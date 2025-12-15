@@ -1,0 +1,1 @@
+estrutura de clientList está em ArrayList mas poderia ser melhorada usando HashMap para buscas mais rápidas.
