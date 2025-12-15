@@ -10,12 +10,11 @@ public class DealWithTeamAnswers {
     private final ModifiedBarrier barrier;
     private Timer timer;
     private final int equipaId;
-    private final GameEngine gameEngine;
 
-    public DealWithTeamAnswers(GameState gameState, int equipaId, GameEngine gameEngine) {
+    public DealWithTeamAnswers(GameState gameState, int equipaId) {
         this.gameState = gameState;
         this.equipaId = equipaId;
-        this.gameEngine = gameEngine;
+
 
         int totalJogadoresEquipa = gameState.getNumJogadoresEquipa();
 
@@ -82,7 +81,7 @@ public class DealWithTeamAnswers {
 
         equipas[equipaId - 1].addPoints(pontosGanhos);
 
-        gameEngine.equipaTerminou(equipaId);
+        //gameEngine.equipaTerminou(equipaId);
     }
 
 

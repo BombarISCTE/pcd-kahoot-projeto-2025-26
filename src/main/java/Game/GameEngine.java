@@ -1,7 +1,7 @@
 package Game;
 
 import Messages.NewQuestion;
-import Server.DealWithClient;
+//import Server.DealWithClient;
 import Utils.ModifiedCountdownLatch;
 
 import java.util.ArrayList;

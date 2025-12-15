@@ -179,6 +179,17 @@ public class GameState {
         return null;
     }
 
+    @Override
+    public String toString() { // todo method toString
+        return "GameState{" +
+                "gameCode=" + gameCode +
+                ", numEquipas=" + numEquipas +
+                ", numJogadoresEquipa=" + numJogadoresEquipa +
+                ", numPerguntas=" + numPerguntas +
+                ", indicePerguntaAtual=" + indicePerguntaAtual +
+                '}';
+    }
+
 
     public int getGameCode() {
         return gameCode;

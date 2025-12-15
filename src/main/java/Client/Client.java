@@ -20,7 +20,7 @@ public class Client implements Runnable {
     private int PORT;
     private String gameCode;
     private int teamId;
-    private String username;
+    private String username; //identificador individual
     private ClientListener listener;
 
     public Client (Socket socket, String IP , int port, String gameCode, int teamId, String username) {
