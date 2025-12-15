@@ -8,20 +8,7 @@ import java.util.Map;
 public class Messages {
 
 
-    public static class ClientConnect implements Serializable {
-        private final String username;
-        private final int gameId;
-        private final int teamId;
-
-        public ClientConnect(String username, int gameId, int teamId) {
-            this.username = username;
-            this.gameId = gameId;
-            this.teamId = teamId;
-        }
-
-        public String getUsername() { return username; }
-        public int getGameId() { return gameId; }
-        public int getTeamId() { return teamId; }
+    public record ClientConnect(String username, int gameId, int teamId) implements Serializable {
     }
 
     public record SendAnswer( String username,int selectedOption, int questionNumber) implements Serializable {
@@ -33,7 +20,7 @@ public class Messages {
     public record ClientConnectAck(String username, int gameId, List<String> connectedPlayers) implements Serializable {
     }
 
-    public static class GameStarted implements Serializable {
+    public class GameStarted implements Serializable {
         private final int gameId;
         public GameStarted(int gameId) {this.gameId = gameId;}
 
@@ -47,17 +34,18 @@ public class Messages {
 //                               int timeLimit) implements Serializable {
 //    }
 
-    public class SendQuestion implements Serializable {
+    public record SendQuestion implements Serializable {
 
         private final String question;
         private final String[] options;
         private final int questionNumber;
-        private final int timeLimit = Constants.TEMPO_LIMITE_QUESTAO;
+        private final int timeLimit;
 
         public SendQuestion(String question, String[] options, int questionNumber) {
             this.question = question;
             this.options = options;
             this.questionNumber = questionNumber;
+            timeLimit = Constants.TEMPO_LIMITE_QUESTAO;
         }
 
         public String getQuestion() {return question;}
