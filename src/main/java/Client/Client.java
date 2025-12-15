@@ -1,6 +1,8 @@
 package Client;
 
-import Messages.*;
+
+import Utils.Messages.*;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -31,7 +33,7 @@ public class Client implements Runnable, Serializable {
     public void run() {
         try {
             connectToServer();
-            sendMessage(new ClientJoined(username, gameId, teamId));
+            sendMessage(new ClientConnect(username, gameId, teamId));
             listenForMessages();
         } catch (Exception e) {
             System.err.println("Cliente encerrou: " + e.getMessage());
@@ -108,6 +110,7 @@ public class Client implements Runnable, Serializable {
     public int getGameId() {
         return gameId;
     }
+    public int getTeamId() {return teamId;}
 
     // Exemplo de main para teste
     public static void main(String[] args) {

@@ -3,7 +3,6 @@ package Server;
 
 import Game.GameState;
 import Game.Pergunta;
-import Messages.*;
 import Utils.Constants;
 
 import java.io.*;
@@ -98,14 +97,6 @@ public class Server {
                 System.out.println(game);
             }
         }
-    }
-
-    public SendQuestion buildSendQuestion(Pergunta p, int questionNumber) {
-        return new SendQuestion(
-                p.getQuestao(),
-                p.getOpcoes(),
-                questionNumber
-        );
     }
 
 
