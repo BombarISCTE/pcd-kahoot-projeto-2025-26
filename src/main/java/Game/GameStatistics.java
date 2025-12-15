@@ -14,4 +14,7 @@ public class GameStatistics {
         return pontosJogadores;
     }
 
+    public synchronized Map<Integer, Integer> snapshot() {
+        return new HashMap<>(pontosJogadores);
+    }
 }

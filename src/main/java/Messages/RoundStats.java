@@ -1,4 +1,9 @@
 package Messages;
 
-public class RoundStats {
+import java.io.Serializable;
+
+public class RoundStats implements Serializable {
+
+
+
 }

@@ -126,4 +126,8 @@ public class Client implements Runnable, Serializable {
         Client client = new Client(ip, port, gameId, teamId, username);
         new Thread(client).start();
     }
+
+    public int getTeamId() {
+        return teamId;
+    }
 }

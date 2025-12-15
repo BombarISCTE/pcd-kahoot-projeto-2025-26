@@ -10,10 +10,12 @@ public class DealWithTeamAnswers {
     private final ModifiedBarrier barrier;
     private Timer timer;
     private final int equipaId;
+    private final GameStatistics gameStatistics;
 
-    public DealWithTeamAnswers(GameState gameState, int equipaId) {
+    public DealWithTeamAnswers(GameState gameState, int equipaId, GameStatistics gameStatistics) {
         this.gameState = gameState;
         this.equipaId = equipaId;
+        this.gameStatistics = gameStatistics;
 
 
         int totalJogadoresEquipa = gameState.getNumJogadoresEquipa();
@@ -41,11 +43,9 @@ public class DealWithTeamAnswers {
         jogador.setOpcaoEscolhida(opcaoEscolhida);
         gameState.registarRespostaEquipa(equipaId);
         barrier.chegouJogador();
-
-        bloquearAteFimDaRonda();
     }
 
-    public void bloquearAteFimDaRonda(){
+    public void esperarAteFimDaRonda(){
         try{
             barrier.await();
         }catch (InterruptedException e){
@@ -77,7 +77,7 @@ public class DealWithTeamAnswers {
 
         for(Player jogador : jogadores){
             jogador.adicionarPontos(pontosGanhos);
-            gameEngine.getGameStatistics().atualizaPontosJogadores(jogador.getId(), pontosGanhos);
+            gameStatistics.atualizaPontosJogadores(jogador.getId(), pontosGanhos);
         }
 
         equipas[equipaId - 1].addPoints(pontosGanhos);
