@@ -2,7 +2,7 @@ package Server;
 
 //import Game.GameEngine;
 import Game.Player;
-import Messages.*;
+import Utils.Messages.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

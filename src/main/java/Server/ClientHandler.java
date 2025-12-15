@@ -2,7 +2,7 @@ package Server;
 
 import Client.Client;
 import Game.GameState;
-import Messages.*;
+import Utils.Messages.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -122,15 +122,18 @@ public class ClientHandler extends Thread {
 
     private void handleMessage(Object message) {
         switch (message) {
-            case ClientJoined joined -> handleClientJoined(joined);
-            case SendQuestion sq -> handleSendQuestion(sq);
-            case ChatMessage cm -> handleChatMessage(cm);
-            case String s -> handleStringMessage(s);
-            // adiciona mais casos aqui conforme novos tipos de mensagens
+//            case ClientConnectAck joined -> handleClientConnectAck(joined);
+//            case SendQuestion sq -> handleSendQuestion(sq);
+//            case SendRoundStats srs -> handleSendRoundStats(srs);
+//            case SendFinalScores sfs -> handleSendFinalScores(sfs);
+            case ClientConnectAck joined -> broadcastMessage(joined, gameId);
+            case SendQuestion sm -> broadcastMessage(sm, gameId);
+            case SendRoundStats srs -> broadcastMessage(srs, gameId);
+            case SendFinalScores sfs -> broadcastMessage(sfs, gameId);
+
             default -> System.out.println("Mensagem desconhecida recebida: " + message);
         }
     }
-//DSfsdf
 
 
 }

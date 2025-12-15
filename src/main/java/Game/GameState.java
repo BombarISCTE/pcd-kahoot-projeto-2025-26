@@ -1,9 +1,5 @@
 package Game;
 
-import Utils.IdCodeGenerator;
-
-import java.util.*;
-
 public class GameState {
 
     //private final String gameCode;
