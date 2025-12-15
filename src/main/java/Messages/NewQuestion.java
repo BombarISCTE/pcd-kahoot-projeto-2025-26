@@ -1,7 +1,5 @@
 package Messages;
 
-import Utils.Constants;
-
 import java.io.Serializable;
 
 public class NewQuestion implements Serializable {
@@ -9,12 +7,14 @@ public class NewQuestion implements Serializable {
     private String[] opcoes;
     private int numeroPergunta;
     private int tempoLimite;
+    private long tempoInicio;
 
-    public NewQuestion(String pergunta, String[] opcoes, int numeroPergunta) {
+    public NewQuestion(String pergunta, String[] opcoes, int numeroPergunta, int tempoLimite, long tempoInicio) {
         this.pergunta = pergunta;
         this.opcoes = opcoes;
         this.numeroPergunta = numeroPergunta;
-        this.tempoLimite = Constants.TEMPO_LIMITE_QUESTAO;
+        this.tempoLimite = tempoLimite;
+        this.tempoInicio = tempoInicio;
     }
 
     public String getPergunta() {
@@ -31,6 +31,10 @@ public class NewQuestion implements Serializable {
 
     public int getTempoLimite() {
         return tempoLimite;
+    }
+
+    public long getTempoInicio() {
+        return tempoInicio;
     }
 
 }
