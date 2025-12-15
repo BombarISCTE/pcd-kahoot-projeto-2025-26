@@ -18,8 +18,9 @@ public class Constants {
 
     public static final int WRONG_ANSWER_PENALTY = -15;
 
-
     public static final int TEMPO_LIMITE_QUESTAO = 15; // seconds
+
+    public static final int GAMEID_GENERATOR = 1000000;
 
 
 }

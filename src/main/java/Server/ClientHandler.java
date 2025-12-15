@@ -8,76 +8,77 @@ import java.util.ArrayList;
 
 public class ClientHandler extends Thread {
 
-    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>(); //keep track of clients
+    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>(); // keep track of clients
     private Socket socket;
-    private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;
+    private ObjectInputStream objectInputStream;
+    private ObjectOutputStream objectOutputStream;
     private Client client;
 
     public ClientHandler(Socket socket){
         try {
             this.socket = socket;
-            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.client = (Client) new ObjectInputStream(socket.getInputStream()).readObject(); // todo ler o cliente
-            //connectClient(bufferedReader.readLine());
+            // create ObjectOutputStream first to avoid stream header deadlock
+            this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            this.objectOutputStream.flush();
+            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+
+            // read initial Client object sent by the client
+            this.client = (Client) objectInputStream.readObject();
+
             clientHandlers.add(this);
             broadcastMessage("SERVER: " + client.getUsername() + " has entered the chat!");
         } catch (Exception e) {
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            closeEverything();
         }
     }
 
-
     @Override
     public void run() {
-        String messageFromClient;
-        while (socket.isConnected()) {
+        Object messageFromClient;
+        while (socket != null && socket.isConnected()) {
             try {
-                messageFromClient = bufferedReader.readLine();
-                broadcastMessage(messageFromClient);
-            } catch (IOException e) {
-                closeEverything(socket, bufferedReader, bufferedWriter);
+                messageFromClient = objectInputStream.readObject();
+                if (messageFromClient != null) {
+                    broadcastMessage(messageFromClient);
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                closeEverything();
                 break;
             }
         }
     }
 
-    public void broadcastMessage(String messageToSend) {
-        for (ClientHandler clientHandler : clientHandlers) {
-            try {
-                if (!clientHandler.client.equals(client)) {
-                    clientHandler.bufferedWriter.write(messageToSend);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
+    public void broadcastMessage(Object messageToSend) {
+        synchronized (clientHandlers) {
+            for (ClientHandler clientHandler : clientHandlers) {
+                try {
+                    if (clientHandler.client != null && !clientHandler.client.equals(this.client)) {
+                        clientHandler.objectOutputStream.writeObject(messageToSend);
+                        clientHandler.objectOutputStream.flush();
+                    }
+                } catch (IOException e) {
+                    clientHandler.closeEverything();
                 }
-            } catch (IOException e) {
-                closeEverything(socket, bufferedReader, bufferedWriter);
             }
-
         }
     }
 
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("SERVER: " + client.getUsername() + " has left the chat!");
+        broadcastMessage("SERVER: " + (client != null ? client.getUsername() : "A client") + " has left the chat!");
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+    public void closeEverything() {
         removeClientHandler();
         try {
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
-            if (bufferedWriter != null) {
-                bufferedWriter.close();
-            }
-            if (socket != null) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            if (objectInputStream != null) objectInputStream.close();
+        } catch (IOException ignored) {}
+        try {
+            if (objectOutputStream != null) objectOutputStream.close();
+        } catch (IOException ignored) {}
+        try {
+            if (socket != null) socket.close();
+        } catch (IOException ignored) {}
     }
 
     public void connectClient(String line) {  //java clienteKahoot IP PORT Jogo Equipa Username
@@ -91,16 +92,12 @@ public class ClientHandler extends Thread {
 
     public void refuseConnection() {
         try {
-            bufferedWriter.write("Connection refused: Invalid arguments.");
-            bufferedWriter.newLine();
-            bufferedWriter.flush();
+            if (objectOutputStream != null) {
+                objectOutputStream.writeObject("Connection refused: Invalid arguments.");
+                objectOutputStream.flush();
+            }
         } catch (IOException e) {
-            e.printStackTrace();
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            closeEverything();
         }
     }
-
-
-
-
 }

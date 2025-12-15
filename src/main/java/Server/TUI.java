@@ -42,7 +42,7 @@ public class TUI {
 
         GameState gameState = new GameState(numEquipas, jogadoresPorEquipa, numPerguntas);
         GameEngine gameEngine = new GameEngine(gameState, perguntas);
-        String codigoJogo = server.criarNovoJogo(gameEngine);
+        String codigoJogo = server.createGame(gameEngine);
         System.out.println("Jogo criado com o código: " + codigoJogo);
     }
 

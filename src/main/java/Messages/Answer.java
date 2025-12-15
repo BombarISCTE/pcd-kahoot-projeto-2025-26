@@ -13,6 +13,12 @@ public class Answer implements Serializable {
         this.opcaoEscolhida = opcaoEscolhida;
     }
 
+    public Answer(String username, int opcaoEscolhida) { // Para jogadores individuais
+        this.username = username;
+        this.equipaId = -1;
+        this.opcaoEscolhida = opcaoEscolhida;
+    }
+
     public String getUsername() {
         return username;
     }

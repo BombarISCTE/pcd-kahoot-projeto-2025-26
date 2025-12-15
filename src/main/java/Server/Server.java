@@ -1,24 +1,22 @@
 package Server;
 
 
-import Game.GameEngine;
+import Game.GameState;
 import Utils.Constants;
-import Utils.IdCodeGenerator;
 
 import java.io.*;
 import java.net.*;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 
 public class Server {
     private static final int PORT = Constants.SERVER_PORT;
     private ServerSocket serverSocket;
+    private ArrayList<GameState> gameList = new ArrayList<>();
 
-    private HashMap<String, GameEngine> gameList;
 
-    public Server(ServerSocket serverSocket) {
-        gameList = new HashMap<>();
-        this.serverSocket = serverSocket;
+    public Server() throws IOException {
+        serverSocket = new ServerSocket(PORT);
     }
 
 
@@ -40,7 +38,7 @@ public class Server {
         }
     }
 
-    public void closeServer() {
+    public void closeServerSocket() {
         try {
             if (serverSocket != null){
                 serverSocket.close();
@@ -50,19 +48,24 @@ public class Server {
         }
     }
 
-    public synchronized GameEngine getGame(String codigoJogo) {
-        return gameList.get(codigoJogo);
+    public synchronized GameState getGame(int codigoJogo) {
+        for (GameState game : gameList) {
+            if (game.getGameCode() == codigoJogo) {
+                return game;
+            }
+        }
+        System.out.println("Jogo com codigo " + codigoJogo + " nao encontrado.");
+        return null;
     }
 
-    public synchronized String criarNovoJogo(GameEngine gameEngine) {
-        String codigoJogo = IdCodeGenerator.gerarCodigo();
-        gameList.put(codigoJogo, gameEngine);
-        return codigoJogo;
+    public synchronized void createGame(GameState game) {
+        int codigoJogo = gameList.size() + +1;
+        gameList.add(game);
+
     }
 
     public static void main(String[] args) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(PORT);
-        Server server = new Server(serverSocket);
+        Server server = new Server();
         server.startServer();
     }
 

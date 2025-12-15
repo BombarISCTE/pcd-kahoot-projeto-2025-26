@@ -6,7 +6,8 @@ import java.util.*;
 
 public class GameState {
 
-    private final String gameCode;
+    //private final String gameCode;
+    private final int gameCode;
 
     private final int numEquipas;
     private int numJogadoresEquipa;
@@ -23,12 +24,13 @@ public class GameState {
 
     private int ordemRespostas = 0;
 
-    public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas) {
+    public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas, int gameCode) {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
         this.numPerguntas = numPerguntas;
 
-        gameCode = IdCodeGenerator.gerarCodigo();
+        //gameCode = IdCodeGenerator.gerarCodigo();
+        this.gameCode = gameCode;
 
         this.equipas = new Team[numEquipas];
         this.jogadores = new Player[numEquipas][numJogadoresEquipa];
@@ -178,4 +180,7 @@ public class GameState {
     }
 
 
+    public int getGameCode() {
+        return gameCode;
+    }
 }

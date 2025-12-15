@@ -12,4 +12,6 @@ public class EndGame implements Serializable {
     public String getMensagem() {
         return mensagem;
     }
+
+
 }
