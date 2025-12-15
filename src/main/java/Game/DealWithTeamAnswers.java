@@ -77,7 +77,7 @@ public class DealWithTeamAnswers {
 
         for(Player jogador : jogadores){
             jogador.adicionarPontos(pontosGanhos);
-            gameEngine.getGameStatistics().atualizaPontosJogadores(jogador.getId(), pontosGanhos);
+            //gameEngine.getGameStatistics().atualizaPontosJogadores(jogador.getId(), pontosGanhos);
         }
 
         equipas[equipaId - 1].addPoints(pontosGanhos);

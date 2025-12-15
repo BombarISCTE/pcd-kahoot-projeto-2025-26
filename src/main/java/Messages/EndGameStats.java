@@ -3,10 +3,10 @@ package Messages;
 import java.io.Serializable;
 import java.util.Map;
 
-public class Statistic implements Serializable {
+public class EndGameStats implements Serializable {
     private final Map<Integer, Integer> pontosJogadores;
 
-    public Statistic(Map<Integer, Integer> pontosJogadores) {
+    public EndGameStats(Map<Integer, Integer> pontosJogadores) {
         this.pontosJogadores = pontosJogadores;
     }
 
