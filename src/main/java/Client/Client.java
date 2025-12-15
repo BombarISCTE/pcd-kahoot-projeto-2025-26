@@ -18,12 +18,12 @@ public class Client implements Runnable {
 
     private String IP;
     private int PORT;
-    private String gameCode;
+    private int gameId;
     private int teamId;
     private String username; //identificador individual
     private ClientListener listener;
 
-    public Client (Socket socket, String IP , int port, String gameCode, int teamId, String username) {
+    public Client (Socket socket, String IP , int port, int gameId, int teamId, String username) {
         try {
             this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -31,7 +31,7 @@ public class Client implements Runnable {
 
             this.IP = IP;
             this.PORT = port;
-            this.gameCode = gameCode;
+            this.gameId = gameId;
             this.teamId = teamId;
             this.username = username;
         } catch (IOException e) {
@@ -82,7 +82,7 @@ public class Client implements Runnable {
     }
 
     private void enviarJoinGame() {
-        JoinGame joinGame = new JoinGame(gameCode, teamId, username);
+        JoinGame joinGame = new JoinGame(username, teamId, gameId);
         try {
             objectOut.writeObject(joinGame);
             objectOut.flush();
@@ -156,12 +156,15 @@ public class Client implements Runnable {
     public String getUsername() {
         return username;
     }
+    public int getGameId() {
+        return gameId;
+    }
 
     @Override
     public String toString() {
         return "Client{" +
                 "username='" + username + '\'' +
-                ", gameCode='" + gameCode  +
+                ", gameId='" + gameId  +
                 '}';
     }
 
@@ -169,11 +172,11 @@ public class Client implements Runnable {
         Scanner sc = new Scanner(System.in);
         String ip = Constants.SERVER_IP; //sc.nextLine();
         int port = Constants.SERVER_PORT; //Integer.parseInt(sc.nextLine());
-        String gameCode = "ABCD"; //sc.nextLine();
+        int gameId = 123; //sc.nextLine();
         int teamId = 1; //Integer.parseInt(sc.nextLine());
         System.out.print("Enter your username: ");
         String username = sc.nextLine();
-        Client client = new Client(new Socket(), ip, port, gameCode, teamId, username);
+        Client client = new Client(new Socket(), ip, port, gameId, teamId, username);
         ClientGUI gui = new ClientGUI(client);
 
     }

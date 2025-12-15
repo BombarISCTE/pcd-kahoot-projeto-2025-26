@@ -19,6 +19,7 @@ public class ClientHandler extends Thread {
     public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
+            this.gameId = gameId;
             // create ObjectOutputStream first to avoid stream header deadlock
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             this.objectOutputStream.flush();
@@ -26,6 +27,7 @@ public class ClientHandler extends Thread {
 
             // read initial Client object sent by the client
             this.client = (Client) objectInputStream.readObject();
+            this.gameId = client.getGameId();
 
             clientHandlers.add(this);
             broadcastMessage("SERVER: " + client.getUsername() + " has entered the chat!", gameId);
@@ -89,7 +91,7 @@ public class ClientHandler extends Thread {
     public void connectClient(String line) {  //java clienteKahoot IP PORT Jogo Equipa Username
         String [] args = line.split(" ");
         if (args.length == 4) {
-            this.client = new Client(socket, args[0], Integer.parseInt(args[1]), args[2], Integer.parseInt(args[3]), args[4]);
+            this.client = new Client(socket, args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4]);
         } else {
             refuseConnection();
         }
@@ -106,8 +108,8 @@ public class ClientHandler extends Thread {
         }
     }
 
-    void setGameId(int gameId) { //package-private para so ser acessivel pelo Server
-        this.gameId = gameId;
-    }
+//    void setGameId(int gameId) { //package-private para so ser acessivel pelo Server
+//        this.gameId = gameId;
+//    }
 
 }

@@ -28,12 +28,12 @@ public class TUI {
         System.out.println("-----------Server TUI-----------");
         System.out.println("Options: newGame | listGames | deleteGame | checkGameStats | exit");
 
-        // optional: preload questions for admin info (non-fatal)
-        try {
-            String caminhoFicheiro = "src/main/java/Game/FicheiroQuestoes.json";
-            Pergunta[] perguntas = Pergunta.lerPerguntas(caminhoFicheiro);
-            System.out.println("Loaded " + perguntas.length + " questions (if file exists).");
-        } catch (Exception ignored) {}
+//        // optional: preload questions for admin info (non-fatal)
+//        try {
+//            String caminhoFicheiro = "src/main/java/Game/FicheiroQuestoes.json";
+//            Pergunta[] perguntas = Pergunta.lerPerguntas(caminhoFicheiro);
+//            System.out.println("Loaded " + perguntas.length + " questions (if file exists).");
+//        } catch (Exception ignored) {}
 
         while (true) {
             System.out.print("\nChoose option > ");
@@ -86,13 +86,10 @@ public class TUI {
         try {
             System.out.print("Number of teams: ");
             int numEquipas = Integer.parseInt(scanner.nextLine().trim());
-
             System.out.print("Players per team: ");
             int jogadoresPorEquipa = Integer.parseInt(scanner.nextLine().trim());
-
             System.out.print("Number of questions: ");
             int numPerguntas = Integer.parseInt(scanner.nextLine().trim());
-
             if (numEquipas < 1 || jogadoresPorEquipa < 1 || numPerguntas < 1) {
                 System.out.println("All numbers must be >= 1.");
                 return;
@@ -101,24 +98,28 @@ public class TUI {
             int code = server.createGameId();
             GameState game = new GameState(numEquipas, jogadoresPorEquipa, numPerguntas, code);
 
-            System.out.print("Optional: path to questions JSON (press Enter to skip): ");
-            String path = scanner.nextLine().trim();
-            if (!path.isEmpty()) {
+            System.out.print("Optional: questions file name (e.g. file.json) [Enter to skip]: ");
+            String fileName = scanner.nextLine().trim();
+
+            if (!fileName.isEmpty()) {
+                String path = "src/main/resources/Perguntas/" + fileName;
                 try {
                     Pergunta[] perguntas = Pergunta.lerPerguntas(path);
                     game.setPerguntas(perguntas);
                     System.out.println("Loaded " + perguntas.length + " questions from " + path);
-                } catch (Exception ioe) {
-                    System.out.println("Could not load questions from " + path + ": " + ioe.getMessage());
+                } catch (Exception e) {
+                    System.out.println("Could not load questions from Game/: " + e.getMessage());
                 }
             }
 
             server.addGame(game);
             System.out.println("Game created with code: " + code);
+
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid number format, aborted creation.");
         }
     }
+
 
     private void handleDeleteGame() {
         try {

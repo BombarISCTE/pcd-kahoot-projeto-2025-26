@@ -25,7 +25,7 @@ public class clientKahoot {
 
         try{
             Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/java/Game/FicheiroQuestoes.json");
-            Client client = new Client(new Socket(), "localhost", 12345, "ABCD", 1, "Player1");
+            Client client = new Client(new Socket(), "localhost", 12345, 123, 1, "Player1");
             ClientGUI gui = new ClientGUI(client);
         } catch(Exception e) {
             e.printStackTrace();
