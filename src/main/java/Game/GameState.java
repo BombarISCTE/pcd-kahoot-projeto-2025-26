@@ -6,7 +6,8 @@ import java.util.*;
 
 public class GameState {
 
-    private final String gameCode;
+    //private final String gameCode;
+    private final int gameCode;
 
     private final int numEquipas;
     private int numJogadoresEquipa;
@@ -23,12 +24,13 @@ public class GameState {
 
     private int ordemRespostas = 0;
 
-    public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas) {
+    public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas, int gameCode) {
         this.numEquipas = numEquipas;
         this.numJogadoresEquipa = numJogadoresEquipa;
         this.numPerguntas = numPerguntas;
 
-        gameCode = IdCodeGenerator.gerarCodigo();
+        //gameCode = IdCodeGenerator.gerarCodigo();
+        this.gameCode = gameCode;
 
         this.equipas = new Team[numEquipas];
         this.jogadores = new Player[numEquipas][numJogadoresEquipa];
@@ -168,18 +170,28 @@ public class GameState {
 
     public Player ocuparSlotJogador(int equipaId, String nomeJogador) {
         Player[] equipa = jogadores[equipaId - 1];
-        for (Player jogador : equipa) {
-            if (!jogador.isJogadorConectado()) {
-                jogador.jogadorAtivo(nomeJogador);
-                return jogador;
+        for (Player p : equipa) {
+            if (!p.isJogadorConectado()) {
+                p.jogadorAtivo(nomeJogador);
+                return p;
             }
         }
         return null;
     }
 
-    public void desconectarJogador(int equipaId, int jogadorId) {
-        Player jogador = getJogador(equipaId, jogadorId);
-        jogador.desconectarJogador();
+    @Override
+    public String toString() { // todo method toString
+        return "GameState{" +
+                "gameCode=" + gameCode +
+                ", numEquipas=" + numEquipas +
+                ", numJogadoresEquipa=" + numJogadoresEquipa +
+                ", numPerguntas=" + numPerguntas +
+                ", indicePerguntaAtual=" + indicePerguntaAtual +
+                '}';
     }
 
+
+    public int getGameCode() {
+        return gameCode;
+    }
 }

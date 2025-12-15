@@ -1,5 +1,7 @@
 package Messages;
 
+import Utils.Constants;
+
 import java.io.Serializable;
 
 public class NewQuestion implements Serializable {
@@ -8,11 +10,11 @@ public class NewQuestion implements Serializable {
     private int numeroPergunta;
     private int tempoLimite;
 
-    public NewQuestion(String pergunta, String[] opcoes, int numeroPergunta, int tempoLimite) {
+    public NewQuestion(String pergunta, String[] opcoes, int numeroPergunta) {
         this.pergunta = pergunta;
         this.opcoes = opcoes;
         this.numeroPergunta = numeroPergunta;
-        this.tempoLimite = tempoLimite;
+        this.tempoLimite = Constants.TEMPO_LIMITE_QUESTAO;
     }
 
     public String getPergunta() {

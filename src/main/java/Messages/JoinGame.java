@@ -3,14 +3,14 @@ package Messages;
 import java.io.Serializable;
 
 public class JoinGame implements Serializable {
-    private String codigoJogo;
+    private int gameId;
     private String nomeJogador;
     private int equipaId;
 
-    public JoinGame(String nomeJogador, int equipaId, String codigoJogo) {
+    public JoinGame(String nomeJogador, int equipaId, int gameId) {
         this.nomeJogador = nomeJogador;
         this.equipaId = equipaId;
-        this.codigoJogo = codigoJogo;
+        this.gameId = gameId;
     }
 
 
@@ -22,8 +22,8 @@ public class JoinGame implements Serializable {
         return equipaId;
     }
 
-    public String getCodigoJogo() {
-        return codigoJogo;
+    public int getGameId() {
+        return gameId;
     }
 
 }

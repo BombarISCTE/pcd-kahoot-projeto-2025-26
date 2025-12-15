@@ -1,5 +1,6 @@
 package Game;
 
+import Utils.Constants;
 import Utils.ModifiedBarrier;
 import Utils.Timer;
 
@@ -9,12 +10,11 @@ public class DealWithTeamAnswers {
     private final ModifiedBarrier barrier;
     private Timer timer;
     private final int equipaId;
-    private final GameEngine gameEngine;
 
-    public DealWithTeamAnswers(GameState gameState, int equipaId, GameEngine gameEngine) {
+    public DealWithTeamAnswers(GameState gameState, int equipaId) {
         this.gameState = gameState;
         this.equipaId = equipaId;
-        this.gameEngine = gameEngine;
+
 
         int totalJogadoresEquipa = gameState.getNumJogadoresEquipa();
 
@@ -28,7 +28,7 @@ public class DealWithTeamAnswers {
         barrier.reset();
         gameState.reporRespostasEquipa();
         gameState.reporOpcoesEscolhidas();
-        int tempo = gameState.getPerguntaAtual().getMaxTimer();
+        int tempo = Constants.TIMOUT_SECS;
         timer = new Timer(tempo, barrier);
         timer.start();
     }
@@ -81,7 +81,7 @@ public class DealWithTeamAnswers {
 
         equipas[equipaId - 1].addPoints(pontosGanhos);
 
-        gameEngine.equipaTerminou(equipaId);
+        //gameEngine.equipaTerminou(equipaId);
     }
 
 

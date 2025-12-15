@@ -3,18 +3,24 @@ package Messages;
 import java.io.Serializable;
 
 public class Answer implements Serializable {
-    private final int jogadorId;
+    private final String username;
     private final int equipaId;
     private final int opcaoEscolhida;
 
-    public Answer(int jogadorId, int equipaId, int opcaoEscolhida) {
-        this.jogadorId = jogadorId;
+    public Answer(String username, int equipaId, int opcaoEscolhida) {
+        this.username = username;
         this.equipaId = equipaId;
         this.opcaoEscolhida = opcaoEscolhida;
     }
 
-    public int getJogadorId() {
-        return jogadorId;
+    public Answer(String username, int opcaoEscolhida) { // Para jogadores individuais
+        this.username = username;
+        this.equipaId = -1;
+        this.opcaoEscolhida = opcaoEscolhida;
+    }
+
+    public String getUsername() {
+        return username;
     }
 
     public int getEquipaId() {
