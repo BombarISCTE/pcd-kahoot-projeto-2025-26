@@ -80,7 +80,7 @@ import java.net.Socket;
 //            enviarMensagem(new JoinGameResponse(jogador.getId(), equipaId, jogador.getName()));
 //        }
 //
-//        else if(mensagem instanceof Answer answer){
+//        else if(mensagem instanceof sendAnswer answer){
 //            if(gameEngine == null || jogadorConectado == null){
 //                System.out.println("Jogador nao conectado");
 //                enviarMensagem(new EndGame("Jogador nao conectado"));
