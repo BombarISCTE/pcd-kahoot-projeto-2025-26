@@ -5,8 +5,7 @@ public class Player {
     private final String name;
     private int score = 0;
     private int chosenOption = -1;
-    private int responseOrder = Integer.MAX_VALUE;
-    private boolean connected = true;
+    private int responseOrder = -1; //quem respondeu primeiro, segundo, etc
 
     public Player(int id, String name) { this.id = id; this.name = name; }
 
@@ -25,10 +24,6 @@ public class Player {
 
     public int getId() { return id; }
     public String getName() { return name; }
-
-    public boolean isConnected() { return connected; }
-    public void disconnect() { connected = false; resetChosenOption(); }
-    public void connect() { connected = true; }
 
     @Override
     public String toString() { return name + " (Score: " + score + ")"; }
