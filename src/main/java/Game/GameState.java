@@ -23,7 +23,6 @@ public class GameState {
     public int getCurrentQuestionIndex() { return currentQuestionIndex; }
 
     private AtomicInteger responseCounter = new AtomicInteger(0);
-
     private ModifiedCountdownLatch countdownLatch;
     private ModifiedBarrier teamBarrier;
     private Timer questionTimer;
@@ -35,6 +34,7 @@ public class GameState {
         this.teamsMap = new HashMap<>();
     }
 
+    // --- Teams ---
     public void addTeam(int teamId, String teamName) {
         if (teamsMap.containsKey(teamId)) throw new IllegalArgumentException("Team exists: " + teamId);
         teamsMap.put(teamId, new Team(teamName, teamId, playersPerTeam));
@@ -44,51 +44,50 @@ public class GameState {
     public ArrayList<Team> getTeams() { return new ArrayList<>(teamsMap.values()); }
     public int getGameCode() { return gameCode; }
 
+    // --- Questions ---
     public void setQuestions(Question[] questions) { this.questions = questions; }
-
     public Question getCurrentQuestion() {
         if (questions == null || currentQuestionIndex >= questions.length) return null;
         return questions[currentQuestionIndex];
     }
 
-    public boolean isCurrentQuestionIndividual() { return currentQuestionIndex % 2 == 0; }
+    public boolean isCurrentQuestionIndividual() {
+        Question current = getCurrentQuestion();
+        return current instanceof IndividualQuestion;
+    }
 
-    // --- Inicializar temporizador e latch/barrier para a pergunta atual ---
+    // --- Start Question ---
     public void startCurrentQuestion() {
         Question current = getCurrentQuestion();
         if (current == null) return;
 
         int totalPlayers = totalPlayersInGame();
 
-        if (isCurrentQuestionIndividual() && current instanceof IndividualQuestion) {
+        if (current instanceof IndividualQuestion iq) {
             countdownLatch = new ModifiedCountdownLatch(
-                    2, // bonusFactor
-                    2, // bonusCount
+                    Constants.BONUS_FACTOR,
+                    2,
                     Constants.QUESTION_TIME_LIMIT,
                     totalPlayers
             );
-        } else if (!isCurrentQuestionIndividual() && current instanceof TeamQuestion) {
-            teamBarrier = new ModifiedBarrier(
-                    totalPlayers,
-                    () -> assignTeamQuestionScores((TeamQuestion) current)
-            );
+            iq.setCountdownLatch(countdownLatch);
+        } else if (current instanceof TeamQuestion tq) {
+            teamBarrier = new ModifiedBarrier(totalPlayers, () -> assignTeamQuestionScores((TeamQuestion) current));
+            tq.setBarrier(teamBarrier);
         }
 
-        // Start timer
+        // Timer para fim de pergunta
         questionTimer = new Timer();
         questionTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (isCurrentQuestionIndividual() && countdownLatch != null) {
-                    countdownLatch.tempoExpirado();
-                } else if (!isCurrentQuestionIndividual() && teamBarrier != null) {
-                    teamBarrier.tempoExpirado();
-                }
+                if (current instanceof IndividualQuestion && countdownLatch != null) countdownLatch.tempoExpirado();
+                else if (current instanceof TeamQuestion && teamBarrier != null) teamBarrier.tempoExpirado();
             }
-        }, Constants.QUESTION_TIME_LIMIT * 1000L);
+        }, Constants.QUESTION_TIME_LIMIT * 1000);
     }
 
-    // --- Registrar resposta de um jogador ---
+    // --- Register Answer ---
     public void registerAnswer(String username, int option) {
         Question current = getCurrentQuestion();
         if (current == null) return;
@@ -98,18 +97,16 @@ public class GameState {
                 if (p.getName().equals(username)) {
                     p.setChosenOption(option);
 
-                    if (isCurrentQuestionIndividual() && current instanceof IndividualQuestion) {
+                    if (current instanceof IndividualQuestion iq) {
                         int order = responseCounter.incrementAndGet();
                         p.setResponseOrder(order);
-
-                        int base = (option == current.getCorrect()) ? current.getPoints() : 0;
-                        if (order <= 2 && base > 0) base *= 2; // bónus 2 primeiros
+                        int base = (option == iq.getCorrect()) ? iq.getPoints() : 0;
+                        if (order <= 2 && base > 0) base *= Constants.BONUS_FACTOR;
                         p.addScore(base);
-
                         if (countdownLatch != null) countdownLatch.countDown();
 
-                    } else if (!isCurrentQuestionIndividual() && current instanceof TeamQuestion) {
-                        teamBarrier.chegouJogador();
+                    } else if (current instanceof TeamQuestion) {
+                        if (teamBarrier != null) teamBarrier.chegouJogador();
                     }
                     return;
                 }
@@ -117,18 +114,16 @@ public class GameState {
         }
     }
 
-    // --- Fim de ronda ---
+    // --- End Round ---
     public RoundResult endRound() {
         Question current = getCurrentQuestion();
         if (current == null) return null;
 
-        if (!isCurrentQuestionIndividual() && teamBarrier != null) {
-            try {
-                teamBarrier.await();
-            } catch (InterruptedException ignored) {}
+        if (current instanceof TeamQuestion && teamBarrier != null) {
+            try { teamBarrier.await(); } catch (InterruptedException ignored) {}
         }
 
-        if (isCurrentQuestionIndividual() && countdownLatch != null) {
+        if (current instanceof IndividualQuestion && countdownLatch != null) {
             assignIndividualScores((IndividualQuestion) current);
         }
 
@@ -138,38 +133,30 @@ public class GameState {
         if (questionTimer != null) questionTimer.cancel();
 
         boolean gameEnded = currentQuestionIndex >= questions.length;
-
         return new RoundResult(true, gameEnded, scores, getCurrentQuestion());
     }
 
-    // --- Atribuir pontuação da pergunta individual por equipa ---
+    // --- Individual Scores ---
     private void assignIndividualScores(IndividualQuestion question) {
         for (Team team : teamsMap.values()) {
             int total = 0;
-            for (Player p : team.getPlayers()) {
-                total += p.getScore();
-            }
-            for (Player p : team.getPlayers()) {
-                p.addScore(total); // todos recebem pontuação da equipa
-            }
+            for (Player p : team.getPlayers()) total += p.getScore();
+            for (Player p : team.getPlayers()) p.addScore(total);
         }
     }
 
-    // --- Atribuir pontuação da pergunta de equipa ---
+    // --- Team Scores ---
     private void assignTeamQuestionScores(TeamQuestion question) {
         for (Team team : teamsMap.values()) {
             ArrayList<Player> players = team.getPlayers();
-            boolean todosAcertaram = true;
-            boolean peloMenosUmAcertou = false;
-
+            boolean allCorrect = true;
+            boolean atLeastOneCorrect = false;
             for (Player p : players) {
-                if (p.getChosenOption() != question.getCorrect()) todosAcertaram = false;
-                else peloMenosUmAcertou = true;
+                if (p.getChosenOption() != question.getCorrect()) allCorrect = false;
+                else atLeastOneCorrect = true;
             }
-
             int score = 0;
-            if (peloMenosUmAcertou) score = todosAcertaram ? question.getPoints() * 2 : question.getPoints();
-
+            if (atLeastOneCorrect) score = allCorrect ? question.getPoints() * 2 : question.getPoints();
             for (Player p : players) p.addScore(score);
         }
     }
@@ -180,7 +167,8 @@ public class GameState {
         return total;
     }
 
-    private HashMap<String, Integer> getCurrentScores() {
+    // --- Scores ---
+    public HashMap<String, Integer> getCurrentScores() {
         HashMap<String, Integer> map = new HashMap<>();
         for (Team t : teamsMap.values()) {
             for (Player p : t.getPlayers()) map.put(p.getName(), p.getScore());
@@ -191,9 +179,10 @@ public class GameState {
     public SendIndividualQuestion createSendIndividualQuestion() {
         Question current = getCurrentQuestion();
         if (current == null || !(current instanceof IndividualQuestion)) return null;
+        IndividualQuestion iq = (IndividualQuestion) current;
         return new SendIndividualQuestion(
-                current.getQuestionText(),
-                current.getOptions(),
+                iq.getQuestionText(),
+                iq.getOptions(),
                 currentQuestionIndex,
                 Constants.QUESTION_TIME_LIMIT
         );
@@ -202,13 +191,23 @@ public class GameState {
     public SendTeamQuestion createSendTeamQuestion() {
         Question current = getCurrentQuestion();
         if (current == null || !(current instanceof TeamQuestion)) return null;
+        TeamQuestion tq = (TeamQuestion) current;
         return new SendTeamQuestion(
-                current.getQuestionText(),
-                current.getOptions(),
+                tq.getQuestionText(),
+                tq.getOptions(),
                 currentQuestionIndex,
                 Constants.QUESTION_TIME_LIMIT
         );
     }
 
-    public SendFinalScores getFinalScores() { return new SendFinalScores(getCurrentScores()); }
+    public SendFinalScores getFinalScores() {
+        return new SendFinalScores(getCurrentScores());
+    }
+
+    public boolean isCurrentQuestionComplete() {
+        Question current = getCurrentQuestion();
+        if (current instanceof IndividualQuestion) return countdownLatch != null && countdownLatch.getCount() <= 0;
+        if (current instanceof TeamQuestion) return teamBarrier != null && teamBarrier.isComplete();
+        return true;
+    }
 }

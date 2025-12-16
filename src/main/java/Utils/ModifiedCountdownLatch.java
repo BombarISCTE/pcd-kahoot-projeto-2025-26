@@ -72,4 +72,7 @@ public class ModifiedCountdownLatch {
         this.bonusUsados = 0;
     }
 
+    public boolean isComplete() {
+        return count <= 0 || tempoExpirado;
+    }
 }

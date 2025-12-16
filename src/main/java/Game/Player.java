@@ -1,17 +1,16 @@
 package Game;
 
 public class Player {
-    private final int id;
+
     private final String name;
     private int score = 0;
     private int chosenOption = -1; //indice da opção escolhida
     private int responseOrder = -1; //quem respondeu primeiro, segundo, etc
-    private Team team; //adicionar referência à equipa
+    private int teamId; //adicionar referência à equipa
 
-    public Player(int id, String name, Team team) {
-        this.id = id;
+    public Player(String name, int teamId) {
         this.name = name;
-        this.team = team;
+        this.teamId = teamId;
     }
 
     public void addScore(int points) { this.score += points; }
@@ -22,15 +21,13 @@ public class Player {
 
     public void resetChosenOption() { this.chosenOption = -1; }
 
-    public Team getTeam() { return team; }
-    public int getTeamId() { return team.getTeamId(); }
+    public int getTeamId() { return teamId; }
 
     public int getScore() { return score; }
 
     public void setResponseOrder(int order) { this.responseOrder = order; } //precisamos de saber os 2 primeiros para atribuir bónus
     public int getResponseOrder() { return responseOrder; }
 
-    public int getId() { return id; }
     public String getName() { return name; }
 
     @Override

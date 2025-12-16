@@ -1,6 +1,8 @@
 package Game;
 
 import Utils.Constants;
+import Utils.ModifiedCountdownLatch;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -9,6 +11,7 @@ public class IndividualQuestion extends Question {
     // Lista de jogadores que responderam a esta pergunta
     private final ArrayList<Player> answeredPlayers = new ArrayList<>();
     private final int totalPlayers;
+    private ModifiedCountdownLatch countdownLatch;
 
     public IndividualQuestion(String questionText, int correct, int points, String[] options, int totalPlayers) {
         super(questionText, correct, points, options);
@@ -29,16 +32,12 @@ public class IndividualQuestion extends Question {
 
         for (Player p : players) {
             int score = (p.getChosenOption() == correct) ? points : 0;
-
-            // bónus aos 2 primeiros da ronda
             int index = answeredPlayers.indexOf(p);
             if (index >= 0 && index < 2 && score > 0) {
                 score *= Constants.BONUS_FACTOR;
             }
-
             totalScore += score;
         }
-        // Atribuir pontuação total a todos os jogadores da equipa
         for (Player p : players) {p.addScore(totalScore);}
     }
 
@@ -47,5 +46,9 @@ public class IndividualQuestion extends Question {
 
     public ArrayList<Player> getAnsweredPlayers() {
         return answeredPlayers;
+    }
+
+    public void setCountdownLatch(ModifiedCountdownLatch latch) {
+        this.countdownLatch = latch;
     }
 }

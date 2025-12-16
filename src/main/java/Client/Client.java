@@ -1,151 +1,125 @@
 package Client;
 
-import Game.Pergunta;
 import Utils.Records.*;
+import Utils.Records.SendAnswer;
+
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Client implements Runnable, Serializable {
-
-    private Socket socket;
-    private ObjectOutputStream objectOut;
-    private ObjectInputStream objectIn;
+public class Client {
 
     private final String serverIP;
     private final int serverPort;
-
-    private final int gameId;
-    private final int teamId;
     private final String username;
+    private int teamId; //wants to belong to
+    private int gameId; //wants to join
+    private Socket socket;
+    private ObjectOutputStream outputStream;
+    private ObjectInputStream inputStream;
 
     private ClientGUI gui;
 
-    public Client(String serverIP, int serverPort, int gameId, int teamId, String username) {
+    public Client(String serverIP, int serverPort, String username, int teamId, int gameId) {
         this.serverIP = serverIP;
         this.serverPort = serverPort;
-        this.gameId = gameId;
-        this.teamId = teamId;
         this.username = username;
+        this.teamId = teamId;
+        this.gameId = gameId;
     }
-
-    @Override
-    public void run() {
-        try {
-            connectToServer();
-            gui = new ClientGUI(this);
-            listenForMessages();
-        } catch (Exception e) {
-            System.err.println("C run - Cliente encerrou: " + e.getMessage());
-        } finally {
-            closeEverything();
-        }
-    }
-
-    private void connectToServer() throws IOException {
-        socket = new Socket(serverIP, serverPort);
-        System.out.println("C connectedToServer - Conectado ao servidor: " + serverIP + ":" + serverPort);
-
-        objectOut = new ObjectOutputStream(socket.getOutputStream());
-        objectOut.flush();
-        objectIn = new ObjectInputStream(socket.getInputStream());
-
-        sendMessage(new ClientConnect(username, gameId, teamId));
-    }
-
-    private void listenForMessages() {
-        new Thread(() -> {
-            while (socket != null && socket.isConnected()) {
-                try {
-                    Object msg = objectIn.readObject();
-                    System.out.println("C listenForMessages - Mensagem do tipo " + msg.getClass().getSimpleName() + " recebida do servidor.");
-
-                    switch (msg.getClass().getSimpleName()) {
-                        case "SendTeamQuestion" -> {
-                            SendTeamQuestion question = (SendTeamQuestion) msg;
-                            gui.mostrarNovaPergunta(question);
-                        }
-
-                        case "SendIndividualQuestion" -> {
-                            SendIndividualQuestion question = (SendIndividualQuestion) msg;
-                            gui.mostrarNovaPergunta(question);
-                        }
-
-                        case "SendRoundStats" -> {
-                            SendRoundStats srs = (SendRoundStats) msg;
-                            gui.atualizarPlacar(new HashMap<>(srs.playerScores()));
-                        }
-
-                        case "SendFinalScores" -> {
-                            SendFinalScores sfs = (SendFinalScores) msg;
-                            gui.gameEnded(new HashMap<>(sfs.finalScores()));
-                            closeEverything();
-                        }
-
-                        case "ClientConnectAck" -> {
-                            ClientConnectAck ack = (ClientConnectAck) msg;
-                            gui.setConnectedPlayers(ack.connectedPlayers());
-                        }
-                        case "FatalErrorMessage" -> {
-                            FatalErrorMessage error = (FatalErrorMessage) msg;
-                            System.err.println("C - listenForMessages - Erro do servidor: " + error.message());
-                            closeEverything();
-                        }
-
-                        default -> System.out.println("C listenForMessages - Mensagem recebida de tipo desconhecido: " + msg);
-                    }
-
-                } catch (IOException e) { //esta a lancar ioexception
-                    System.err.println("C listenForMessages - Erro ao receber mensagem do servidor: " + e.getMessage());
-                    closeEverything();
-                    break;
-                } catch (ClassNotFoundException e) {
-                    System.err.println("C listenForMessages - Classe não encontrada ao receber mensagem: " + e.getMessage());
-                }
-            }
-        }).start();
-    }
-
-
-
-
-    public void sendMessage(Serializable message) {
-        try {
-            if (objectOut != null) {
-                objectOut.writeObject(message);
-                objectOut.flush();
-            }
-        } catch (IOException e) {
-            System.err.println("C sendMessage- Erro ao enviar mensagem: " + e.getMessage());
-        }
-    }
-
-    public void closeEverything() {
-        try {
-            if (objectIn != null) objectIn.close();
-            if (objectOut != null) objectOut.close();
-            if (socket != null) socket.close();
-        } catch (IOException ignored) {}
-    }
-
 
     public String getUsername() {
         return username;
     }
 
+    public void start() throws IOException {
+        socket = new Socket(serverIP, serverPort);
+        outputStream = new ObjectOutputStream(socket.getOutputStream());
+        outputStream.flush();
+        inputStream = new ObjectInputStream(socket.getInputStream());
+
+        gui = new ClientGUI(this);
+
+        new Thread(this::listenLoop).start();
+
+        // Envia handshake inicial para conectar ao servidor
+        sendMessage(new ClientConnect(username, -1, 0)); // gameId e teamId serão atualizados pelo servidor
+    }
+
+    private void listenLoop() {
+        try {
+            while (true) {
+                Object obj = inputStream.readObject();
+                if (obj == null) continue;
+
+                switch (obj.getClass().getSimpleName()) {
+                    case "ClientConnectAck" -> {
+                        ClientConnectAck ack = (ClientConnectAck) obj;
+                        gui.setConnectedPlayers(ack.connectedPlayers());
+                    }
+                    case "SendIndividualQuestion" -> {
+                        gui.mostrarNovaPergunta((SendIndividualQuestion) obj);
+                    }
+                    case "SendTeamQuestion" -> {
+                        gui.mostrarNovaPergunta((SendTeamQuestion) obj);
+                    }
+                    case "SendRoundStats" -> {
+                        SendRoundStats stats = (SendRoundStats) obj;
+                        gui.atualizarPlacar(stats.playerScores());
+                    }
+                    case "SendFinalScores" -> {
+                        SendFinalScores finalScores = (SendFinalScores) obj;
+                        gui.gameEnded(finalScores.finalScores());
+                    }
+                    case "GameEnded" -> {
+                        gui.setMensagemEspaco.setText("Jogo terminado pelo servidor!");
+                        gui.setOptionsEnabled(false);
+                    }
+                    case "ErrorMessage" -> {
+                        gui.setMensagemEspaco.setText("Erro: " + ((ErrorMessage) obj).message());
+                    }
+                    case "FatalErrorMessage" -> {
+                        gui.setMensagemEspaco.setText("Erro fatal: " + ((FatalErrorMessage) obj).message());
+                        closeEverything();
+                        return;
+                    }
+                    default -> System.out.println("Cliente recebeu mensagem desconhecida: " + obj.getClass().getName());
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            gui.setMensagemEspaco.setText("Conexão perdida com o servidor.");
+        }
+    }
+
+    public void sendMessage(Serializable msg) {
+        try {
+            outputStream.writeObject(msg);
+            outputStream.flush();
+        } catch (IOException e) {
+            gui.setMensagemEspaco.setText("Erro ao enviar mensagem ao servidor.");
+        }
+    }
+
+    public void closeEverything() {
+        try {
+            if (inputStream != null) inputStream.close();
+            if (outputStream != null) outputStream.close();
+            if (socket != null && !socket.isClosed()) socket.close();
+        } catch (IOException ignored) {}
+    }
+
     public static void main(String[] args) {
         String serverIP = "localhost";
         int serverPort = 8008;
-
-        int gameId = 1000000;
+        String username = "Player1";
         int teamId = 2;
-        String username = "2";
-        Client client = new Client(serverIP, serverPort, gameId, teamId, "player1");
-        new Thread(client).start();
-
-        Client client2 = new Client(serverIP, serverPort, gameId+1, teamId, "Player2");
-        new Thread(client2).start();
-
-
+        int gameId = 1000000;
+        Client client = new Client(serverIP, serverPort, username, teamId, gameId);
+        try {
+            client.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

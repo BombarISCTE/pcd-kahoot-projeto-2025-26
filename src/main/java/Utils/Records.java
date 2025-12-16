@@ -16,18 +16,29 @@ public class Records {
     public record SendAnswer( String username,int selectedOption, int questionNumber) implements Serializable {
     }
 
-    /**
-     * @param connectedPlayers optional list of already connected players
-     */
+
     public record ClientConnectAck(String username, int gameId, ArrayList<String> connectedPlayers) implements Serializable {
     }
 
-    public class GameStarted implements Serializable {
-        private final int gameId;
-        public GameStarted(int gameId) {this.gameId = gameId;}
+//    public record GameStarted implements Serializable {
+//        private final int gameId;
+//
+//        public GameStarted(int gameId) {this.gameId = gameId;}
+//
+//        public int getGameId() { return gameId; }
+//    }
+//
+//    public record GameEnded implements Serializable {
+//        private final int gameId;
+//
+//        public GameEnded(int gameId) { this.gameId = gameId; }
+//
+//        public int getGameId() { return gameId; }
+//    }
 
-        public int getGameId() { return gameId; }
-    }
+    public record GameStarted(int gameId) implements Serializable {}
+    public record GameEnded(int gameId) implements Serializable {}
+
 
     public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores,
                               Question nextQuestion) implements Serializable { }
@@ -50,13 +61,7 @@ public class Records {
 
     public record FatalErrorMessage(String message) implements Serializable { }
 
-    public static class GameEnded implements Serializable {
-        private final int gameId;
 
-        public GameEnded(int gameId) { this.gameId = gameId; }
-
-        public int getGameId() { return gameId; }
-    }
 
     public record SendFinalScores(HashMap<String, Integer> finalScores) implements Serializable { // username -> pontuação
     }

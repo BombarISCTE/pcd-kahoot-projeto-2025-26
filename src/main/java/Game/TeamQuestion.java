@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class TeamQuestion extends Question {
 
     private final ArrayList<Team> teams;
-    private final ModifiedBarrier barrier;
+    private ModifiedBarrier barrier;
 
     public TeamQuestion(String questionText, int correct, int points, String[] options, ArrayList<Team> teams) {
         super(questionText, correct, points, options);
@@ -61,4 +61,5 @@ public class TeamQuestion extends Question {
     public ModifiedBarrier getBarrier() {
         return barrier;
     }
+    public void setBarrier(ModifiedBarrier barrier) {this.barrier = barrier;}
 }

@@ -1,6 +1,5 @@
 package Client;
 
-import Utils.Constants;
 import Utils.Records.*;
 
 import javax.swing.*;
@@ -10,13 +9,13 @@ import java.util.HashMap;
 
 public class ClientGUI extends JFrame {
 
-    private JLabel mensagemEspaco;
+    JLabel setMensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
     private JLabel[] playerScoreLabels;
     private final Client client;
 
-    private int currentQuestionNumber;
+    private int currentQuestionNumber = -1;
     private Timer countdownTimer;
     private int tempoRestante;
 
@@ -27,7 +26,7 @@ public class ClientGUI extends JFrame {
 
     private void initGUI() {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setSize(500, 400);
+        this.setSize(600, 400);
         this.setLayout(new BorderLayout(10, 10));
 
         // Pergunta
@@ -46,21 +45,15 @@ public class ClientGUI extends JFrame {
         }
         painelCentral.add(painelOpcoes, BorderLayout.CENTER);
 
-        // Placar
+        // Painel de placar inicial vazio
         JPanel placarPontos = new JPanel(new GridLayout(0, 1, 5, 5));
         placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
-        playerScoreLabels = new JLabel[Constants.MAX_CLIENTS];
-        for (int i = 0; i < playerScoreLabels.length; i++) {
-            playerScoreLabels[i] = new JLabel("Jogador " + (i + 1) + ": 0 pontos");
-            placarPontos.add(playerScoreLabels[i]);
-        }
-        painelCentral.add(placarPontos, BorderLayout.EAST);
-
         this.add(painelCentral, BorderLayout.CENTER);
+        this.add(placarPontos, BorderLayout.EAST);
 
         // Mensagem inferior
-        mensagemEspaco = new JLabel("Conectando...", SwingConstants.CENTER);
-        this.add(mensagemEspaco, BorderLayout.SOUTH);
+        setMensagemEspaco = new JLabel("Conectando...", SwingConstants.CENTER);
+        this.add(setMensagemEspaco, BorderLayout.SOUTH);
 
         this.setVisible(true);
     }
@@ -75,21 +68,22 @@ public class ClientGUI extends JFrame {
         ));
 
         setOptionsEnabled(false);
-        mensagemEspaco.setText("Resposta enviada!");
+        setMensagemEspaco.setText("Resposta enviada!");
         if (countdownTimer != null) countdownTimer.stop();
     }
 
-    private void setOptionsEnabled(boolean enabled) {
+    void setOptionsEnabled(boolean enabled) {
         for (JButton btn : opcoesBotoes) {
             btn.setEnabled(enabled);
         }
     }
 
+    // Atualiza lista de jogadores e cria labels
     public void setConnectedPlayers(ArrayList<String> players) {
-        playerScoreLabels = new JLabel[players.size()];
         JPanel placarPontos = new JPanel(new GridLayout(players.size(), 1, 5, 5));
         placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
 
+        playerScoreLabels = new JLabel[players.size()];
         for (int i = 0; i < players.size(); i++) {
             playerScoreLabels[i] = new JLabel(players.get(i) + ": 0 pontos");
             placarPontos.add(playerScoreLabels[i]);
@@ -122,34 +116,40 @@ public class ClientGUI extends JFrame {
         }
 
         tempoRestante = timeLimit;
-        mensagemEspaco.setText("Tempo restante: " + tempoRestante + "s");
+        setMensagemEspaco.setText("Tempo restante: " + tempoRestante + "s");
 
         if (countdownTimer != null) countdownTimer.stop();
         countdownTimer = new Timer(1000, e -> {
             tempoRestante--;
-            mensagemEspaco.setText("Tempo restante: " + tempoRestante + "s");
+            setMensagemEspaco.setText("Tempo restante: " + tempoRestante + "s");
             if (tempoRestante <= 0) {
                 ((Timer) e.getSource()).stop();
                 setOptionsEnabled(false);
-                mensagemEspaco.setText("Tempo esgotado!");
+                setMensagemEspaco.setText("Tempo esgotado!");
             }
         });
         countdownTimer.start();
     }
 
     public void atualizarPlacar(HashMap<String, Integer> scores) {
-        int i = 0;
-        for (String player : scores.keySet()) {
-            if (i >= playerScoreLabels.length) break;
-            playerScoreLabels[i].setText(player + ": " + scores.get(player) + " pontos");
-            i++;
+        if (playerScoreLabels == null) return;
+        for (int i = 0; i < playerScoreLabels.length; i++) {
+            String playerName = playerScoreLabels[i].getText().split(":")[0];
+            if (scores.containsKey(playerName)) {
+                playerScoreLabels[i].setText(playerName + ": " + scores.get(playerName) + " pontos");
+            }
         }
     }
 
     public void gameEnded(HashMap<String, Integer> finalScores) {
         atualizarPlacar(finalScores);
         perguntaEspaco.setText("Jogo terminado!");
-        mensagemEspaco.setText("Pontuações finais enviadas pelo servidor.");
+        setMensagemEspaco.setText("Pontuações finais enviadas pelo servidor.");
         setOptionsEnabled(false);
     }
+
+    public void setSetMensagemEspaco(String msg) {
+        setMensagemEspaco.setText(msg);}
+
+
 }

@@ -26,10 +26,10 @@ public class Team {
         players.add(player);
     }
 
-    // Remove um jogador da equipa pelo ID
-    public synchronized void removePlayer(int playerId) {
+    // Remove um jogador da equipa pelo username
+    public synchronized void removePlayer(String name) {
         for (int i = 0; i < players.size(); i++) {
-            if (players.get(i).getId() == playerId) {
+            if (players.get(i).getName().equals(name)) {
                 players.remove(i);
                 return;
             }
@@ -67,5 +67,14 @@ public class Team {
         }
         sb.append("Total Score: ").append(getTotalScore());
         return sb.toString();
+    }
+
+    public Player getPlayer(String username) {
+        for (Player p : players) {
+            if (p.getName().equals(username)) {
+                return p;
+            }
+        }
+        return null;
     }
 }
