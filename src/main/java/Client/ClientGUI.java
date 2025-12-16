@@ -1,110 +1,146 @@
 package Client;
 
 import Game.Pergunta;
+import Utils.Constants;
+import Utils.Records;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-public class ClientGUI extends JFrame  {
+public class ClientGUI extends JFrame {
 
-    private JLabel mensagemEspaco;
+    JLabel mensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
-    private Pergunta[] perguntas;
+    private JLabel[] playerScoreLabels; // para atualizar o placar dinamicamente
+    private Pergunta currentQuestion;
     private final Client client;
 
-    public ClientGUI(Client client, Pergunta[] perguntas) {
+    public ClientGUI(Client client) {
         this.client = client;
-        this.perguntas = perguntas;
         initGUI();
     }
 
     private void initGUI() {
-//        this.perguntas = perguntas;
-
-        //janela pricipal da Client
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setSize(400, 400);
+        this.setSize(500, 400);
         this.setLayout(new BorderLayout(10, 10));
-        //para ficar com espaçamento de 10 em toda a volta da Client
         getRootPane().setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        //Espaço para colocar a pergunta em questao, na parte superior da Client
-        perguntaEspaco = new JLabel("", SwingConstants.CENTER);
+        // Pergunta
+        perguntaEspaco = new JLabel("Aguardando pergunta...", SwingConstants.CENTER);
         this.add(perguntaEspaco, BorderLayout.NORTH);
 
-        //Painel principal do centro
+        // Painel central com opções
         JPanel painelCentral = new JPanel(new BorderLayout(10, 10));
-
-        //Painel central do lado esquerdo da Client, com as opcoes da pergunta
         JPanel painelOpcoes = new JPanel(new GridLayout(2, 2, 10, 10));
-
-        for(int i = 0; i < opcoesBotoes.length; i++) {
-            opcoesBotoes[i] = new JButton("Opcao " + (i + 1));
-            painelOpcoes.add(opcoesBotoes[i]);
+        for (int i = 0; i < opcoesBotoes.length; i++) {
+            JButton btn = new JButton("Opção " + (i + 1));
+            int index = i;
+            btn.addActionListener(e -> enviarResposta(index));
+            opcoesBotoes[i] = btn;
+            painelOpcoes.add(btn);
         }
-
-        //Adiciona o pinel das opcoes ao painel principal
         painelCentral.add(painelOpcoes, BorderLayout.CENTER);
 
-        //Placar central do lado direito da Client, com as pontuacoes
-        JPanel placarPontos = new JPanel(new GridLayout(3, 2, 10, 10));
-
+        // Placar
+        JPanel placarPontos = new JPanel(new GridLayout(0, 1, 5, 5));
         placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
-
-        JLabel equipaALabel = new JLabel("Equipa A", SwingConstants.CENTER);
-        JLabel equipaBLabel = new JLabel("Equipa B", SwingConstants.CENTER);
-
-        JLabel jogadorA1 = new JLabel("A1 : 0 pontos", SwingConstants.CENTER);
-        JLabel jogadorB1 = new JLabel("B1 : 0 pontos", SwingConstants.CENTER);
-        JLabel jogadorA2 = new JLabel("A2 : 0 pontos", SwingConstants.CENTER);
-        JLabel jogadorB2 = new JLabel("B2 : 0 pontos", SwingConstants.CENTER);
-
-        //1ºlinha
-        placarPontos.add(equipaALabel);
-        placarPontos.add(equipaBLabel);
-        //2ºlinha
-        placarPontos.add(jogadorA1);
-        placarPontos.add(jogadorB1);
-        //3ºlinha
-        placarPontos.add(jogadorA2);
-        placarPontos.add(jogadorB2);
-
-        //Adiciona o painel das pontuacoes ao painel principal
+        playerScoreLabels = new JLabel[Constants.MAX_CLIENTS];
+        for (int i = 0; i < playerScoreLabels.length; i++) {
+            playerScoreLabels[i] = new JLabel("Jogador " + (i + 1) + ": 0 pontos");
+            placarPontos.add(playerScoreLabels[i]);
+        }
         painelCentral.add(placarPontos, BorderLayout.EAST);
 
-        //Adiciona o painel central à Client
         this.add(painelCentral, BorderLayout.CENTER);
 
-        //Adiciona no fim da Client uma zona para colocar um cronometro com o tempo estabelecido pelo servidor
+        // Mensagem inferior
         JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
-        JLabel tempo = new JLabel("Tempo: --", SwingConstants.LEFT);
-        mensagemEspaco = new JLabel("Utils.Mensagem: --", SwingConstants.RIGHT);
-
-        painelInferior.add(tempo, BorderLayout.WEST);
-        painelInferior.add(mensagemEspaco, BorderLayout.EAST);
-
-        //Adiciona o painelInferior à Client
+        mensagemEspaco = new JLabel("Conectando...", SwingConstants.CENTER);
+        painelInferior.add(mensagemEspaco, BorderLayout.CENTER);
         this.add(painelInferior, BorderLayout.SOUTH);
-
-        mostrarPergunta();
 
         this.setVisible(true);
     }
 
-    private void mostrarPergunta(){
-        if(perguntas == null || perguntas.length == 0){
-            perguntaEspaco.setText("Nenhuma pergunta disponivel.");
-            return;
-        }
-        Pergunta pergunta = perguntas[0];
-        perguntaEspaco.setText(pergunta.getQuestion());
-        String[] opcoes = pergunta.getOptions();
-        for(int i = 0; i < opcoesBotoes.length; i++){
-            opcoesBotoes[i].setText(opcoes[i]);
-        }
-        mensagemEspaco.setText("Fim das perguntas.");
-        return;
+    private void enviarResposta(int optionIndex) {
+        if (currentQuestion == null) return;
+
+        client.sendMessage(new Records.SendAnswer(
+                client.getUsername(),
+                optionIndex,
+                0 // pode passar o questionNumber se necessário
+        ));
+
+        // Desativa os botões até receber a próxima pergunta
+        setOptionsEnabled(false);
+        mensagemEspaco.setText("Resposta enviada!");
     }
 
+    private void setOptionsEnabled(boolean enabled) {
+        for (JButton btn : opcoesBotoes) {
+            btn.setEnabled(enabled);
+        }
+    }
+    public void setConnectedPlayers(ArrayList<String> players) {
+        playerScoreLabels = new JLabel[players.size()];
+        JPanel placarPontos = new JPanel(new GridLayout(players.size(), 1, 5, 5));
+        placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
+
+        for (int i = 0; i < players.size(); i++) {
+            playerScoreLabels[i] = new JLabel(players.get(i) + ": 0 pontos");
+            placarPontos.add(playerScoreLabels[i]);
+        }
+
+
+        this.removeAll(); // ou remover apenas o placar antigo
+        this.add(placarPontos, BorderLayout.EAST);
+        this.revalidate();
+        this.repaint();
+    }
+
+
+    public void mostrarNovaPergunta(Pergunta pergunta, int questionIndex) {
+        if (pergunta == null) {
+            perguntaEspaco.setText("Fim do jogo ou sem perguntas.");
+            setOptionsEnabled(false);
+            return;
+        }
+
+        currentQuestion = pergunta;
+        perguntaEspaco.setText(pergunta.getQuestion());
+
+        String[] opcoes = pergunta.getOptions();
+        for (int i = 0; i < opcoesBotoes.length; i++) {
+            if (i < opcoes.length) {
+                opcoesBotoes[i].setText(opcoes[i]);
+                opcoesBotoes[i].setEnabled(true);
+            } else {
+                opcoesBotoes[i].setEnabled(false);
+            }
+        }
+
+        mensagemEspaco.setText("Tempo restante: " + Constants.TEMPO_LIMITE_QUESTAO + "s");
+    }
+
+    public void atualizarPlacar(HashMap<String, Integer> scores) {
+        int i = 0;
+        for (String player : scores.keySet()) {
+            if (i >= playerScoreLabels.length) break;
+            playerScoreLabels[i].setText(player + ": " + scores.get(player) + " pontos");
+            i++;
+        }
+    }
+
+    public void gameEnded(HashMap<String, Integer> finalScores) {
+        atualizarPlacar(finalScores);
+        perguntaEspaco.setText("Jogo terminado!");
+        mensagemEspaco.setText("Pontuações finais enviadas pelo servidor.");
+        setOptionsEnabled(false);
+    }
 }

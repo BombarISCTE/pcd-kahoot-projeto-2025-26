@@ -1,17 +1,10 @@
 package Client;
 
-
-import Utils.Constants;
-import Utils.Records.ClientConnect;
-import Utils.Records.SendQuestion;
-
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.net.InetAddress;
+import Game.Pergunta;
+import Utils.Records.*;
+import java.io.*;
 import java.net.Socket;
-import java.util.Scanner;
+import java.util.HashMap;
 
 public class Client implements Runnable, Serializable {
 
@@ -19,23 +12,18 @@ public class Client implements Runnable, Serializable {
     private ObjectOutputStream objectOut;
     private ObjectInputStream objectIn;
 
-    private String serverIP;
-    private int serverPort;
+    private final String serverIP;
+    private final int serverPort;
 
-    private int gameId;
-    private int teamId;
-    private String username;
+    private final int gameId;
+    private final int teamId;
+    private final String username;
+
+    private ClientGUI gui;
 
     public Client(String serverIP, int serverPort, int gameId, int teamId, String username) {
         this.serverIP = serverIP;
         this.serverPort = serverPort;
-        this.gameId = gameId;
-        this.teamId = teamId;
-        this.username = username;
-    }
-    public Client(int gameId, int teamId, String username) {
-        this.serverIP = Constants.SERVER_IP;
-        this.serverPort = Constants.SERVER_PORT;
         this.gameId = gameId;
         this.teamId = teamId;
         this.username = username;
@@ -45,8 +33,8 @@ public class Client implements Runnable, Serializable {
     public void run() {
         try {
             connectToServer();
-            sendMessage(new ClientConnect(username, gameId, teamId));
             listenForMessages();
+            gui = new ClientGUI(this);
         } catch (Exception e) {
             System.err.println("Cliente encerrou: " + e.getMessage());
         } finally {
@@ -55,17 +43,15 @@ public class Client implements Runnable, Serializable {
     }
 
     private void connectToServer() throws IOException {
-        InetAddress address = InetAddress.getByName(serverIP);
-        socket = new Socket(address, serverPort);
+        socket = new Socket(serverIP, serverPort);
         System.out.println("Conectado ao servidor: " + serverIP + ":" + serverPort);
 
-        // Criar streams de objeto
         objectOut = new ObjectOutputStream(socket.getOutputStream());
         objectOut.flush();
         objectIn = new ObjectInputStream(socket.getInputStream());
+
+        sendMessage(new ClientConnect(username, gameId, teamId));
     }
-
-
 
     private void listenForMessages() {
         new Thread(() -> {
@@ -73,27 +59,38 @@ public class Client implements Runnable, Serializable {
                 try {
                     Object msg = objectIn.readObject();
 
-                    if (msg instanceof SendQuestion sq) {
-                        System.out.println("Pergunta #" + sq.questionNumber() + ": " + sq.question());
-                        String[] options = sq.options();
-                        for (int i = 0; i < options.length; i++) {
-                            System.out.println((i + 1) + ". " + options[i]);
+                    switch (msg.getClass().getSimpleName()) {
+                        case "SendQuestion" -> {
+                            SendQuestion sq = (SendQuestion) msg;
+                            Pergunta p = new Pergunta(sq.question(), -1, 0, sq.options());
+                            gui.mostrarNovaPergunta(p, sq.questionNumber());
                         }
-                        System.out.println("Tempo limite: " + sq.timeLimit() + "s");
-                    } else if (msg instanceof String s) {
-                        System.out.println("Mensagem do servidor: " + s);
-                    } else {
-                        System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
+
+                        case "SendRoundStats" -> {
+                            SendRoundStats srs = (SendRoundStats) msg;
+                            gui.atualizarPlacar(new HashMap<>(srs.playerScores()));
+                        }
+
+                        case "SendFinalScores" -> {
+                            SendFinalScores sfs = (SendFinalScores) msg;
+                            gui.gameEnded(new HashMap<>(sfs.finalScores()));
+                        }
+
+                        case "ClientConnectAck" -> {
+                            ClientConnectAck ack = (ClientConnectAck) msg;
+                            gui.setConnectedPlayers(ack.connectedPlayers());
+                        }
+
+
+                        default -> System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
                     }
 
                 } catch (IOException e) {
-                    System.err.println("IOEXCEPTION - Erro ao receber mensagem do servidor: " + e.getMessage());
+                    System.err.println("Erro ao receber mensagem do servidor: " + e.getMessage());
                     closeEverything();
                     break;
                 } catch (ClassNotFoundException e) {
-                    System.err.println("CLASSNOTFOUND - Erro ao receber mensagem do servidor: " + e.getMessage());
-                    closeEverything();
-                    break;
+                    System.err.println("Classe não encontrada ao receber mensagem: " + e.getMessage());
                 }
             }
         }).start();
@@ -123,24 +120,16 @@ public class Client implements Runnable, Serializable {
         return username;
     }
 
-    public int getGameId() {
-        return gameId;
-    }
-    public int getTeamId() {return teamId;}
-
-    // Exemplo de main para teste
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        String ip = Constants.SERVER_IP;
-        int port = Constants.SERVER_PORT;
-        System.out.print("Enter game ID: ");
-        int gameId = Integer.parseInt(sc.nextLine());
-        System.out.print("Enter team ID: ");
-        int teamId = Integer.parseInt(sc.nextLine());
-        System.out.print("Enter your username: ");
-        String username = sc.nextLine();
+        String serverIP = "localhost";
+        int serverPort = 8008;
 
-        Client client = new Client(ip, port, gameId, teamId, username);
+        int gameId = 1;
+        int teamId = 2;
+        String username = "2";
+        Client client = new Client(serverIP, serverPort, gameId, teamId, username);
         new Thread(client).start();
+
+
     }
 }

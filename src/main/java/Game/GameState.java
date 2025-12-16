@@ -3,23 +3,39 @@ package Game;
 import Utils.Constants;
 import Utils.Records.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class GameState {
 
     private final int gameCode;
-    private final ArrayList<Team> teams = new ArrayList<>();
+    private final HashMap<Integer, Team> teamsMap; // teamId -> Team
+    private final int numTeams;
+    private final int playersPerTeam;
+
     private Pergunta[] questions;
     private int currentQuestionIndex = 0;
 
     public GameState(int numTeams, int playersPerTeam, int gameCode) {
         this.gameCode = gameCode;
-        for (int i = 0; i < numTeams; i++) {
-            teams.add(new Team("Team " + (i + 1), i));
+        this.numTeams = numTeams;
+        this.playersPerTeam = playersPerTeam;
+        this.teamsMap = new HashMap<>();
+    }
+
+    // Adiciona um time manualmente
+    public void addTeam(int teamId, String teamName) {
+        if (teamsMap.containsKey(teamId)) {
+            throw new IllegalArgumentException("Team ID already exists: " + teamId);
         }
+        teamsMap.put(teamId, new Team(teamName, teamId, playersPerTeam));
     }
 
     public ArrayList<Team> getTeams() {
-        return teams;
+        return new ArrayList<>(teamsMap.values());
+    }
+
+    public Team getTeam(int teamId) {
+        return teamsMap.get(teamId);
     }
 
     public void setQuestions(Pergunta[] questions) {
@@ -36,7 +52,7 @@ public class GameState {
     }
 
     public void registerAnswer(String username, int option) {
-        for (Team team : teams) {
+        for (Team team : teamsMap.values()) {
             for (Player p : team.getPlayers()) {
                 if (p.getName().equals(username)) {
                     p.setChosenOption(option);
@@ -54,9 +70,9 @@ public class GameState {
         ArrayList<String> playerNames = new ArrayList<>();
         ArrayList<Integer> playerScores = new ArrayList<>();
 
-        for (Team team : teams) {
+        for (Team team : teamsMap.values()) {
             try {
-                team.awaitAll(); // espera que todos da equipa respondam ou timeout
+                team.awaitAll();
             } catch (InterruptedException ignored) {}
             int teamScore = team.calculateQuestionScore(current);
             for (Player p : team.getPlayers()) {
@@ -70,8 +86,7 @@ public class GameState {
         currentQuestionIndex++;
         boolean gameEnded = currentQuestionIndex >= questions.length;
 
-        // Constrói hashmap para SendRoundStats
-        java.util.HashMap<String, Integer> scores = new java.util.HashMap<>();
+        HashMap<String, Integer> scores = new HashMap<>();
         for (int i = 0; i < playerNames.size(); i++) {
             scores.put(playerNames.get(i), playerScores.get(i));
         }
@@ -86,8 +101,8 @@ public class GameState {
     }
 
     public SendFinalScores getFinalScores() {
-        java.util.HashMap<String, Integer> finalScores = new java.util.HashMap<>();
-        for (Team team : teams) {
+        HashMap<String, Integer> finalScores = new HashMap<>();
+        for (Team team : teamsMap.values()) {
             for (Player p : team.getPlayers()) {
                 finalScores.put(p.getName(), p.getScore());
             }

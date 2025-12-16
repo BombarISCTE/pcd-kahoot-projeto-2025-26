@@ -114,11 +114,12 @@ public class TUI {
                     System.out.println("Loaded " + perguntas.length + " questions from " + path);
                 } catch (Exception e) {
                     System.out.println("Could not load questions from Game/: " + e.getMessage());
+                    return;
                 }
             }
 
             server.addGame(game);
-            System.out.println("Game created with code: " + code);
+            System.out.println("Game created with code: " + game.getGameCode());
 
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid number format, aborted creation.");
@@ -141,7 +142,7 @@ public class TUI {
             Records.SendQuestion sendQuestion = game.createSendQuestion(30);
             if (sendQuestion != null) {
                 for (ClientHandler ch : ClientHandler.clientHandlers) {
-                    if (ch.gameId == code) {
+                    if (ch.getGameId() == code) {
                         ch.sendMessage(sendQuestion);
                     }
                 }

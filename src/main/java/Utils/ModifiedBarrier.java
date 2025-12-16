@@ -35,6 +35,16 @@ public class ModifiedBarrier {
         }
     }
 
+    public boolean isCompleted() {
+        lock.lock();
+        try {
+            return acaoExecutada;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+
     public void tempoExpirado(){
         lock.lock();
         try{

@@ -3,7 +3,7 @@ package Utils;
 import Game.Pergunta;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 
@@ -19,7 +19,7 @@ public class Records {
     /**
      * @param connectedPlayers optional list of already connected players
      */
-    public record ClientConnectAck(String username, int gameId, List<String> connectedPlayers) implements Serializable {
+    public record ClientConnectAck(String username, int gameId, ArrayList<String> connectedPlayers) implements Serializable {
     }
 
     public class GameStarted implements Serializable {

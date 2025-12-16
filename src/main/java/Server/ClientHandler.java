@@ -1,31 +1,31 @@
 package Server;
 
-import Utils.Constants;
-import Utils.Records;
 import Utils.Records.*;
 import Game.GameState;
 import Game.Player;
+import Game.Team;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class ClientHandler extends Thread {
 
     private final Server server;
     static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
-
-    private Socket socket;
-    private ObjectInputStream objectInputStream;
-    private ObjectOutputStream objectOutputStream;
+    private final Socket socket;
+    private final ObjectInputStream objectInputStream;
+    private final ObjectOutputStream objectOutputStream;
 
     public ClientConnect clientConnected;
-    public int gameId;
-    public GameState gameState;
 
-    public ClientHandler(Socket socket, Server server) throws IOException, ClassNotFoundException {
+    public int getGameId() {return gameId;}
+
+    private int gameId;
+    private GameState gameState;
+
+    public ClientHandler(Socket socket, Server server) throws IOException {
         this.socket = socket;
         this.server = server;
 
@@ -33,54 +33,177 @@ public class ClientHandler extends Thread {
         this.objectOutputStream.flush();
         this.objectInputStream = new ObjectInputStream(socket.getInputStream());
 
-        Object line = objectInputStream.readObject();
-        connectClient(line);
-
-        synchronized (clientHandlers) {
-            clientHandlers.add(this);
-        }
-
-        broadcastMessage("SERVER: " + clientConnected.username() + " has entered the game!", gameId);
+        synchronized(clientHandlers) { clientHandlers.add(this); }
     }
 
     @Override
     public void run() {
         try {
-            while (socket != null && !socket.isClosed()) {
+            // Primeira mensagem: ClientConnect
+            Object msg = objectInputStream.readObject();
+            if (msg instanceof ClientConnect connect) handleClientConnect(connect);
+
+            // Loop principal
+            while (!socket.isClosed()) {
                 Object message = objectInputStream.readObject();
                 handleMessage(message);
             }
-        } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Client disconnected: " + (clientConnected != null ? clientConnected.username() : "unknown"));
+        } catch (Exception e) {
+            System.out.println("Client disconnected: " +
+                    (clientConnected != null ? clientConnected.username() : "unknown"));
         } finally {
             closeEverything();
         }
     }
 
-    // ----------------------- Messaging -----------------------
+
+    private void handleMessage(Object message) {
+        switch (message) {
+
+            case ClientConnect connect -> handleClientConnect(connect);
+
+            case SendAnswer sa -> handleSendAnswer(sa);
+
+            case GameStarted gs -> handleGameStarted(gs);
+
+            default -> System.out.println("Unknown message: " + message);
+        }
+    }
+
+    private void handleClientConnect(ClientConnect connect) {
+        System.out.println("handleClientConnect called");
+        this.clientConnected = connect;
+        this.gameId = connect.gameId();
+        this.gameState = server.getGame(gameId);
+        Team team = gameState.getTeam(connect.teamId());
+        System.out.println("111111111111");
+
+        // Pega o ID do player a partir do Server
+        int playerId = server.generatePlayerId();
+        System.out.println("Generated playerId: " + playerId);
+        Player player = new Player(playerId, connect.username());
+        System.out.println("team" + team);
+        System.out.println("Created player: " + player.getName() + " with ID: " + player.getId());
+        System.out.println("max players per team: " + team.getMaxPlayersPerTeam());
+        System.out.println("team current players: " + team.getPlayers().size());
+
+        team.addPlayer(player);
+
+        System.out.println("22222222222222222222");
+        // Lista de jogadores conectados no jogo
+        ArrayList<String> connectedPlayers = new ArrayList<>();
+        for (Team t : gameState.getTeams()) {
+            for (Player p : t.getPlayers()) {
+                connectedPlayers.add(p.getName());
+            }
+        }
+
+        ClientConnectAck ack = new ClientConnectAck(connect.username(), gameId, connectedPlayers);
+        broadcastMessage(ack, gameId);
+        System.out.println("end of handleClientConnect");
+    }
+
+
+
+
+    private void sendNextQuestion(GameState game, int timeoutSeconds) {
+        for (Team t : game.getTeams()) {
+            t.startNewQuestion(() -> checkAllTeamsFinished(game));
+        }
+        sendQuestionWithTimer(timeoutSeconds);
+    }
+
+    private void checkAllTeamsFinished(GameState game) {
+        boolean allFinished = true;
+        for (Team t : game.getTeams()) {
+            if (!t.isRoundFinished()) {
+                allFinished = false;
+                break;
+            }
+        }
+        if (allFinished) {sendRoundResultsAndNext();}
+    }
+
+
+
+    private void sendQuestionWithTimer(int timeoutSeconds) {
+        SendQuestion questionMsg = gameState.createSendQuestion(timeoutSeconds);
+        if (questionMsg == null) return;
+
+        broadcastMessage(questionMsg, gameId);
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(timeoutSeconds * 1000);
+                synchronized (gameState) {
+                    sendRoundResultsAndNext();
+                }
+            } catch (InterruptedException ignored) {}
+        }).start();
+    }
+
+    private void sendRoundResultsAndNext() {
+        RoundResult result = gameState.endRound();
+        broadcastMessage(new SendRoundStats(gameId, result.playerScores()), gameId);
+
+        if (!result.gameEnded()) {
+            sendQuestionWithTimer(30);
+        } else {
+            broadcastMessage(new GameEnded(gameId), gameId);
+            broadcastMessage(gameState.getFinalScores(), gameId);
+        }
+    }
+
+    private void handleSendAnswer(SendAnswer sa) {
+        gameState.registerAnswer(sa.username(), sa.selectedOption());
+        boolean roundDone = true;
+        for (Team t : gameState.getTeams()) {
+            if (!t.isRoundFinished()) {
+                roundDone = false;
+                break;
+            }
+        }
+        if (roundDone) {
+            sendRoundResultsAndNext();}
+    }
+
+
+    private void handleGameStarted(GameStarted gs) {
+        GameState game = server.getGame(gs.getGameId());
+        if (game == null) return;
+
+        // Inicializa a barrier para cada equipa com ação de enviar resultados
+        for (Team t : game.getTeams()) {
+            if (!t.getPlayers().isEmpty()) {
+                t.startNewQuestion(this::sendRoundResultsAndNext);
+            }
+        }
+
+        // Envia a primeira pergunta
+        SendQuestion questionMsg = game.createSendQuestion(30);
+        if (questionMsg != null) {
+            broadcastMessage(questionMsg, gs.getGameId());
+        }
+    }
+
+
 
     public void broadcastMessage(Serializable message, int gameId) {
         synchronized (clientHandlers) {
             for (ClientHandler ch : clientHandlers) {
-                if (ch.gameId == gameId) {
-                    ch.sendMessage(message);
-                }
+                if (ch.gameId == gameId) ch.sendMessage(message);
             }
         }
     }
 
     public void sendMessage(Serializable message) {
         try {
-            if (objectOutputStream != null) {
-                objectOutputStream.writeObject(message);
-                objectOutputStream.flush();
-            }
+            objectOutputStream.writeObject(message);
+            objectOutputStream.flush();
         } catch (IOException e) {
             closeEverything();
         }
     }
-
-    // ----------------------- Client Connect -----------------------
 
     public void connectClient(Object line) {
         if (line instanceof ClientConnect connect) {
@@ -89,104 +212,6 @@ public class ClientHandler extends Thread {
             this.gameState = server.getGame(gameId);
         }
     }
-
-    // ----------------------- Handle Messages -----------------------
-
-    private void handleMessage(Object message) {
-        if (message == null) return;
-
-        synchronized (gameState) {
-            switch (message) {
-
-                // Client connects
-                case ClientConnect connect -> {
-                    this.clientConnected = connect;
-                    this.gameId = connect.gameId();
-                    Player player = gameState.addPlayer(connect.username());
-
-                    // Broadcast ClientConnectAck
-                    List<String> connectedPlayers = new ArrayList<>(gameState.getPlayers().keySet());
-                    ClientConnectAck ack = new ClientConnectAck(connect.username(), gameId, connectedPlayers);
-                    broadcastMessage(ack, gameId);
-                }
-
-                // Client sends answer
-                case SendAnswer sa -> {
-                    gameState.registerAnswer(sa.username(), sa.selectedOption());
-
-                    // Check if round ended
-                    if (gameState.roundEnded()) {
-                        RoundResult roundResult = gameState.endRound();
-                        sendRoundStats(roundResult);
-
-                        if (!roundResult.gameEnded()) {
-                            sendQuestionWithTimer(); // 30s per question
-                        } else {
-                            sendGameEnded();
-                        }
-                    }
-                }
-
-                // Start game (from TUI)
-                case GameStarted gs -> {
-                    broadcastMessage(gs, gs.getGameId());
-                    sendQuestionWithTimer(); // start first question with 30s timer
-                }
-
-                // Unknown messages
-                default -> System.out.println("Unknown message received: " + message);
-            }
-        }
-    }
-
-    // ----------------------- Question / Round Handling -----------------------
-
-    public void sendQuestionWithTimer() {
-        int timerSecs = Constants.TIMOUT_SECS;
-        SendQuestion questionMsg = gameState.createSendQuestion(timerSecs);
-        if (questionMsg == null) return;
-
-        broadcastMessage(questionMsg, gameId);
-
-        // Timer thread for the question
-        new Thread(() -> {
-            try {
-                Thread.sleep(timerSecs * 1000);
-
-                synchronized (gameState) {
-                    if (!gameState.roundEnded()) {
-                        RoundResult roundResult = gameState.endRound();
-                        sendRoundStats(roundResult);
-
-                        if (!roundResult.gameEnded()) {
-                            sendQuestionWithTimer();
-                        } else {
-                            sendGameEnded();
-                        }
-                    }
-                }
-            } catch (InterruptedException e) {
-                System.out.println("Question timer interrupted for game " + gameId);
-                Thread.currentThread().interrupt();
-            }
-        }).start();
-    }
-
-    private void sendRoundStats(RoundResult roundResult) {
-        SendRoundStats srs = new SendRoundStats(gameId, new HashMap<>(roundResult.playerScores()));
-        broadcastMessage(srs, gameId);
-    }
-
-    private void sendGameEnded() {
-        broadcastMessage(new GameEnded(gameId), gameId);
-
-        HashMap<String, Integer> finalScores = new HashMap<>();
-        for (Player p : gameState.getPlayers().values()) {
-            finalScores.put(p.getName(), p.getScore());
-        }
-        broadcastMessage(new SendFinalScores(finalScores), gameId);
-    }
-
 
     public void closeEverything() {
         try {

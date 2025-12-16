@@ -9,12 +9,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Server {
     private static final int PORT = Constants.SERVER_PORT;
     private ServerSocket serverSocket;
-    private final Map<Integer, GameState> games = new HashMap<>(); //ou usar ConcurrentHashMap e nao usar synchronized
+    private final Map<Integer, GameState> games = new HashMap<>(); //gameId -> GameState
     private boolean isRunning;
+    private static final AtomicInteger playerIdGenerator = new AtomicInteger(1);
 
 
     public Server() throws IOException {
@@ -42,8 +44,6 @@ public class Server {
             closeServerSocket();
             e.printStackTrace();
 
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -104,5 +104,6 @@ public class Server {
 
 
 
+    public int generatePlayerId() {return playerIdGenerator.getAndIncrement();}
 
 }
