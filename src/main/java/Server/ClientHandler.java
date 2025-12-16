@@ -76,6 +76,12 @@ public class ClientHandler extends Thread {
         this.gameId = connect.gameId();
         this.gameState = server.getGame(gameId);
         Team team = gameState.getTeam(connect.teamId());
+        if (team == null) {
+            // Se a equipa não existir ainda, cria e adiciona ao GameState
+            gameState.addTeam(connect.teamId(), "Team " + connect.teamId());
+            team = gameState.getTeam(connect.teamId());
+        }
+
         System.out.println("111111111111");
 
         // Pega o ID do player a partir do Server

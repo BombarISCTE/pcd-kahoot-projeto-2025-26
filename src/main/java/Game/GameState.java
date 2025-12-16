@@ -30,17 +30,13 @@ public class GameState {
         teamsMap.put(teamId, new Team(teamName, teamId, playersPerTeam));
     }
 
-    public ArrayList<Team> getTeams() {
-        return new ArrayList<>(teamsMap.values());
-    }
+    public ArrayList<Team> getTeams() {return new ArrayList<>(teamsMap.values());}
 
-    public Team getTeam(int teamId) {
-        return teamsMap.get(teamId);
-    }
+    public Team getTeam(int teamId) {return teamsMap.get(teamId);}
+    public int getNumTeams() {return numTeams;}
+    public int getPlayersPerTeam() {return playersPerTeam;}
 
-    public void setQuestions(Pergunta[] questions) {
-        this.questions = questions;
-    }
+    public void setQuestions(Pergunta[] questions) {this.questions = questions;}
 
     public Pergunta getCurrentQuestion() {
         if (questions == null || currentQuestionIndex >= questions.length) return null;

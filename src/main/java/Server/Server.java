@@ -78,9 +78,15 @@ public class Server {
 
     public synchronized void removeGame(int gameId) {games.remove(gameId);}
 
-    public synchronized int createGameId(){
-        return games.size() + 1;
+    public synchronized int createGameId(){return games.size() + 1;}
+    public synchronized int createTeamId(int gameId){
+        GameState game = games.get(gameId);
+        if (game != null) {
+            return game.getTeams().size() + 1;
+        }
+        return -1;
     }
+
 
     public synchronized void listGames() {
         if (games.isEmpty()) {
