@@ -1,6 +1,7 @@
 package Client;
 
-import Game.Pergunta;
+import Game.Question;
+import jdk.jshell.execution.Util;
 
 public class clientKahoot {
 
@@ -21,7 +22,7 @@ public class clientKahoot {
 //        //client.runClient();
 
         try{
-            Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/resources/Perguntas/FicheiroQuestoes.json");
+            Question[] perguntas = Utils.FormatQuestions.readQuestions("src/main/resources/Perguntas/FicheiroQuestoes.json");
             Client client = new Client( "localhost", 12345, 123, 1, "Player1");
             ClientGUI gui = new ClientGUI(client);//todo passar as perguntas sem respostas pelo server
         } catch(Exception e) {

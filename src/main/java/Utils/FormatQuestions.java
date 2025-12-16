@@ -82,4 +82,30 @@ public class FormatQuestions {
             return questions;
         }
     }
+
+        public static void main(String[] args) {
+
+        String path = "src/main/resources/Perguntas/FicheiroComPerguntas.txt";
+        String jsonPath = convertTxtToJsonPath(path);
+
+        try{
+            txtTrimmer(path, jsonPath);
+        } catch (IOException e){
+            System.err.println("Erro ao trimar o ficheiro de perguntas: " + e.getMessage());
+        }
+
+        try {
+            Question[] perguntas = Utils.FormatQuestions.readQuestions(jsonPath);
+
+            System.out.println("Total de perguntas: " + perguntas.length + "\n");
+
+            for (Question p : perguntas) {
+                System.out.println(p); // usa o toString() da classe Pergunta
+                System.out.println("-----------------------------------");
+            }
+
+        } catch (IOException e) {
+            System.err.println("Erro ao ler o ficheiro de perguntas: " + e.getMessage());
+        }
+    }
 }
