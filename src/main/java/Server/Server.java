@@ -27,32 +27,23 @@ public class Server {
 
 
     public void startServer() {
-        startTUI(); // inicia a TUI numa thread separada
+        startTUI(); // iniciar a TUI numa thread separada
 
-        while (!serverSocket.isClosed() && isRunning) {
-            try {
+        try {
+            while (!serverSocket.isClosed() && isRunning) {
                 Socket socket = serverSocket.accept();
-                System.out.println("Server - New client connected: " +
-                        socket.getInetAddress().getHostAddress());
-
-                try {
-                    ClientHandler clientHandler = new ClientHandler(socket, this);
-                    new Thread(clientHandler).start();
-                } catch (IOException e) {
-                    System.out.println("Server - Falha ao criar ClientHandler para cliente");
-                    socket.close();
-                }
-
-            } catch (IOException e) {
-                if (isRunning) {
-                    System.out.println("Server - Erro ao aceitar cliente: " + e.getMessage());
-                }
-                break;
+                System.out.println("Server startServer- New client connected: " + socket.getInetAddress().getHostAddress());
+                ClientHandler clientHandler = new ClientHandler(socket, this); // <--- aqui
+                Thread thread = new Thread(clientHandler);
+                thread.start();
             }
+        } catch (IOException e) {
+            System.out.println("Server startServer - Erro ao iniciar o servidor: " + e.getMessage());
+            closeServerSocket();
+            e.printStackTrace();
         }
-
-        closeServerSocket();
     }
+
 
 
     public void startTUI() {
@@ -95,6 +86,7 @@ public class Server {
         }
         return -1;
     }
+
 
 
     public synchronized void listGames() {

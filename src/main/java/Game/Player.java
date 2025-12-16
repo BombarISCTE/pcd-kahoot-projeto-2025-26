@@ -4,10 +4,15 @@ public class Player {
     private final int id;
     private final String name;
     private int score = 0;
-    private int chosenOption = -1;
+    private int chosenOption = -1; //indice da opção escolhida
     private int responseOrder = -1; //quem respondeu primeiro, segundo, etc
+    private Team team; //adicionar referência à equipa
 
-    public Player(int id, String name) { this.id = id; this.name = name; }
+    public Player(int id, String name, Team team) {
+        this.id = id;
+        this.name = name;
+        this.team = team;
+    }
 
     public void addScore(int points) { this.score += points; }
 
@@ -16,6 +21,9 @@ public class Player {
     public int getChosenOption() { return chosenOption; }
 
     public void resetChosenOption() { this.chosenOption = -1; }
+
+    public Team getTeam() { return team; }
+    public int getTeamId() { return team.getTeamId(); }
 
     public int getScore() { return score; }
 

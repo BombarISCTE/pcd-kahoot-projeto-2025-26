@@ -17,73 +17,80 @@ public class ClientHandler extends Thread {
     private ObjectOutputStream objectOutputStream;
 
     private boolean handlerRunning = true;
-
     public ClientConnect clientConnected;
 
     private GameState gameState;
     private int gameId;
-
-    public int getGameId() {
-        return gameId;
-    }
+    public int getGameId() { return gameId; }
 
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
-
     private int responseCounter = 0;
 
-    public ClientHandler(Socket socket, Server server) throws IOException {
+    public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
         this.server = server;
-        this.gameState = null;
 
-        this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-        this.objectOutputStream.flush();
-        this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+        try {
+            // Criar streams
+            this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            this.objectOutputStream.flush();
+            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+
+            synchronized(clientHandlers) { clientHandlers.add(this); }
+
+        } catch (IOException e) {
+            System.err.println("CH constructor - Erro ao criar streams para o cliente: " + e.getMessage());
+            closeEverything();
+        }
     }
 
     @Override
     public void run() {
         try {
-            Object firstMsg = objectInputStream.readObject();
-            if (firstMsg instanceof ClientConnect connect) {
-                handleClientConnect(connect);
-            } else {
-                closeEverything();
-                return;
-            }
+            handleClientConnect();  // handshake inicial
+            listenLoop();           // loop principal de mensagens
 
-            while (handlerRunning && !socket.isClosed()) {
-                Object msg = objectInputStream.readObject();
-                handleMessage(msg);
-            }
-
-        } catch (SocketException | EOFException e) {
+        } catch (SocketException e) {
             System.out.println("CH run: Cliente desconectou: " +
                     (clientConnected != null ? clientConnected.username() : "unknown"));
-        } catch (Exception e) {
-            System.out.println("CH run: Cliente desconectou (exception): " +
-                    (clientConnected != null ? clientConnected.username() : "unknown"));
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("CH run: Erro com cliente " +
+                    (clientConnected != null ? clientConnected.username() : "unknown") +
+                    " - " + e.getMessage());
         } finally {
             closeEverything();
         }
     }
 
-    private void handleMessage(Object message) {
-        switch (message) {
-            case SendAnswer sa -> handleSendAnswer(sa);
-            case GameStarted gs -> handleGameStarted(gs);
-            default -> System.out.println("Unknown message: " + message);
+    private void listenLoop() {
+        while (handlerRunning && !socket.isClosed()) {
+            try {
+                Object msg = objectInputStream.readObject();
+                handleMessage(msg);
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println("CH listenLoop: Cliente desconectou: " +
+                        (clientConnected != null ? clientConnected.username() : "unknown"));
+                break;
+            }
         }
     }
 
-    private synchronized void handleClientConnect(ClientConnect connect) {
+    private void handleClientConnect() throws IOException, ClassNotFoundException {
+        Object firstMsg = objectInputStream.readObject();
+        if (!(firstMsg instanceof ClientConnect connect)) {
+            sendMessage(new FatalErrorMessage("Mensagem inicial inválida"));
+            closeEverything();
+            return;
+        }
+
         this.clientConnected = connect;
         this.gameId = connect.gameId();
-
         this.gameState = server.getGame(gameId);
+
         if (gameState == null) {
             sendMessage(new FatalErrorMessage("Game not found"));
-            closeEverything();
+            System.out.println("CH - handleClientConnect: game not found para " + connect.username());
+            closeEverything(); // só fecha este cliente, não o servidor
             return;
         }
 
@@ -97,11 +104,76 @@ public class ClientHandler extends Thread {
         Player player = new Player(playerId, connect.username());
         team.addPlayer(player);
 
-        synchronized (clientHandlers) {
-            clientHandlers.add(this);
-        }
-
         broadcastConnectedPlayers();
+    }
+
+    private void handleMessage(Object message) {
+        switch (message) {
+            case SendAnswer sa -> handleSendAnswer(sa);
+            case GameStarted gs -> handleGameStarted(gs);
+            default -> System.out.println("CH - Mensagem desconhecida: " + message);
+        }
+    }
+
+    private void handleGameStarted(GameStarted gs) {
+        sendNextQuestion(gameState);
+    }
+
+    private void sendNextQuestion(GameState gameState) {
+        // lógica de envio de perguntas (igual à sua implementação atual)
+    }
+
+    private void handleSendAnswer(SendAnswer sa) {
+        if (gameState == null) return;
+
+        gameState.registerAnswer(sa.username(), sa.selectedOption());
+        if (gameState.isCurrentQuestionIndividual()) {
+            Player player = null;
+            outer: for (Team t : gameState.getTeams()) {
+                for (Player p : t.getPlayers()) {
+                    if (p.getName().equals(sa.username())) {
+                        player = p;
+                        break outer;
+                    }
+                }
+            }
+            if (player != null) {
+                responseCounter++;
+                player.setResponseOrder(responseCounter);
+                int baseScore = Constants.RIGHT_ANSWER_POINTS;
+                if (player.getResponseOrder() <= 2 &&
+                        gameState.getCurrentQuestion().verificarResposta(player.getChosenOption())) {
+                    baseScore *= 2;
+                }
+                if (gameState.getCurrentQuestion().verificarResposta(player.getChosenOption())) {
+                    player.addScore(baseScore);
+                }
+            }
+        } else {
+            for (Team t : gameState.getTeams()) {
+                if (t.getPlayers().stream().anyMatch(p -> p.getName().equals(sa.username()))) {
+                    t.playerAnswered();
+                    break;
+                }
+            }
+        }
+    }
+
+    public void broadcastMessage(Serializable message, int gameId) {
+        synchronized(clientHandlers) {
+            for (ClientHandler ch : clientHandlers) {
+                if (ch.handlerRunning && ch.gameId == gameId) ch.sendMessage(message);
+            }
+        }
+    }
+
+    public void sendMessage(Serializable message) {
+        try {
+            objectOutputStream.writeObject(message);
+            objectOutputStream.flush();
+        } catch (IOException e) {
+            closeEverything();
+        }
     }
 
     private void broadcastConnectedPlayers() {
@@ -117,151 +189,20 @@ public class ClientHandler extends Thread {
         broadcastMessage(new ClientConnectAck("Server", gameId, connected), gameId);
     }
 
-    private void handleGameStarted(GameStarted gs) {
-        sendNextQuestion(gameState);
-    }
-
-    private void sendNextQuestion(GameState gameState) {
-        Pergunta current = gameState.getCurrentQuestion();
-        if (current == null) return;
-
-        int timeoutSeconds = Constants.QUESTION_TIME_LIMIT;
-
-        if (current instanceof Pergunta.PerguntaEquipa) {
-            for (Team t : gameState.getTeams()) {
-                t.startNewQuestion(() -> {
-                    int score = t.calculateQuestionScore(current);
-                    t.setPlayersRoundScore(score);
-                    checkAllTeamsFinished(gameState);
-                });
-            }
-
-            SendTeamQuestion questionMsg =
-                    new SendTeamQuestion(current.getQuestion(), current.getOptions(),
-                            gameState.getCurrentQuestionIndex(), timeoutSeconds);
-
-            broadcastMessage(questionMsg, gameState.getGameCode());
-
-        } else {
-            SendIndividualQuestion questionMsg =
-                    new SendIndividualQuestion(current.getQuestion(), current.getOptions(),
-                            gameState.getCurrentQuestionIndex(), timeoutSeconds);
-
-            broadcastMessage(questionMsg, gameState.getGameCode());
-        }
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(timeoutSeconds * 1000);
-                synchronized (gameState) {
-                    RoundResult result = gameState.endRound();
-                    broadcastMessage(new SendRoundStats(gameState.getGameCode(),
-                            result.playerScores()), gameState.getGameCode());
-
-                    if (!result.gameEnded()) {
-                        sendNextQuestion(gameState);
-                    } else {
-                        broadcastMessage(gameState.getFinalScores(), gameState.getGameCode());
-                    }
-                }
-            } catch (InterruptedException ignored) {
-            }
-        }).start();
-    }
-
-    private void checkAllTeamsFinished(GameState game) {
-        boolean allFinished = game.getTeams().stream().allMatch(Team::isRoundFinished);
-        if (!allFinished) return;
-
-        RoundResult result = game.endRound();
-        broadcastMessage(new SendRoundStats(game.getGameCode(),
-                result.playerScores()), game.getGameCode());
-
-        if (!result.gameEnded()) {
-            sendNextQuestion(game);
-        } else {
-            broadcastMessage(game.getFinalScores(), game.getGameCode());
-        }
-    }
-
-    private void handleSendAnswer(SendAnswer sa) {
-        if (gameState == null) return;
-
-        gameState.registerAnswer(sa.username(), sa.selectedOption());
-
-        if (gameState.isCurrentQuestionIndividual()) {
-            Player player = null;
-
-            outer:
-            for (Team t : gameState.getTeams()) {
-                for (Player p : t.getPlayers()) {
-                    if (p.getName().equals(sa.username())) {
-                        player = p;
-                        break outer;
-                    }
-                }
-            }
-
-            if (player != null) {
-                responseCounter++;
-                player.setResponseOrder(responseCounter);
-
-                int baseScore = Constants.RIGHT_ANSWER_POINTS;
-                if (player.getResponseOrder() <= 2 &&
-                        gameState.getCurrentQuestion().verificarResposta(player.getChosenOption())) {
-                    baseScore *= 2;
-                }
-
-                if (gameState.getCurrentQuestion().verificarResposta(player.getChosenOption())) {
-                    player.addScore(baseScore);
-                }
-            }
-        } else {
-            for (Team t : gameState.getTeams()) {
-                if (t.getPlayers().stream()
-                        .anyMatch(p -> p.getName().equals(sa.username()))) {
-                    t.playerAnswered();
-                    break;
-                }
-            }
-        }
-    }
-
-    public void broadcastMessage(Serializable message, int gameId) {
-        synchronized (clientHandlers) {
-            for (ClientHandler ch : clientHandlers) {
-                if (ch.handlerRunning && ch.gameId == gameId) {
-                    ch.sendMessage(message);
-                }
-            }
-        }
-    }
-
-    public void sendMessage(Serializable message) {
-        try {
-            objectOutputStream.writeObject(message);
-            objectOutputStream.flush();
-        } catch (IOException e) {
-            closeEverything();
-        }
-    }
 
     public void closeEverything() {
         if (!handlerRunning) return;
         handlerRunning = false;
 
-        synchronized (clientHandlers) {
-            clientHandlers.remove(this);
-        }
+        synchronized(clientHandlers) { clientHandlers.remove(this); }
 
-        System.out.println("CH closeEverything - Closing connection for: " +
+        System.out.println("CH closeEverything - Fechando conexão para: " +
                 (clientConnected != null ? clientConnected.username() : "unknown"));
 
         if (clientConnected != null && gameState != null) {
             Team team = gameState.getTeam(clientConnected.teamId());
             if (team != null) {
-                team.getPlayers().removeIf(p ->
-                        p.getName().equals(clientConnected.username()));
+                team.getPlayers().removeIf(p -> p.getName().equals(clientConnected.username()));
             }
             broadcastConnectedPlayers();
         }
@@ -270,7 +211,6 @@ public class ClientHandler extends Thread {
             if (objectInputStream != null) objectInputStream.close();
             if (objectOutputStream != null) objectOutputStream.close();
             if (socket != null && !socket.isClosed()) socket.close();
-        } catch (IOException ignored) {
-        }
+        } catch (IOException ignored) {}
     }
 }

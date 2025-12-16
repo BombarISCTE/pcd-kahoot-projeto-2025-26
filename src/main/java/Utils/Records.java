@@ -1,6 +1,6 @@
 package Utils;
 
-import Game.Pergunta;
+import Game.Question;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class Records {
     }
 
     public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores,
-                              Pergunta nextQuestion) implements Serializable { }
+                              Question nextQuestion) implements Serializable { }
 
 
     public record SendQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable { }
