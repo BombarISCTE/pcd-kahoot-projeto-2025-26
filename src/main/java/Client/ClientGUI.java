@@ -6,8 +6,6 @@ import Utils.Records;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -125,7 +123,7 @@ public class ClientGUI extends JFrame {
             }
         }
 
-        mensagemEspaco.setText("Tempo restante: " + Constants.TEMPO_LIMITE_QUESTAO + "s");
+        mensagemEspaco.setText("Tempo restante: " + Constants.QUESTION_TIME_LIMIT + "s");
     }
 
     public void atualizarPlacar(HashMap<String, Integer> scores) {

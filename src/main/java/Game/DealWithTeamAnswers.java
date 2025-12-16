@@ -1,91 +1,62 @@
 package Game;
 
 import Utils.Constants;
-import Utils.ModifiedBarrier;
-import Utils.Timer;
 
-//public class DealWithTeamAnswers {
-//
-//    private final GameState gameState;
-//    private final ModifiedBarrier barrier;
-//    private Timer timer;
-//    private final int equipaId;
-//    private final GameStatistics gameStatistics;
-//    private int totalJogadoresEquipa;
-//
-//    public DealWithTeamAnswers(GameState gameState, int equipaId, GameStatistics gameStatistics) {
-//        this.gameState = gameState;
-//        this.equipaId = equipaId;
-//        this.gameStatistics = gameStatistics;
-//
-//
-//        this.totalJogadoresEquipa = gameState.getPlayersByTeam().size();
-//
-//        this.barrier = new ModifiedBarrier(
-//                totalJogadoresEquipa, () -> aplicarPontuacao()
-//        );
-//
-//    }
-//
-////    public void iniciarPerguntaEquipa(){
-////        barrier.reset();
-////        gameState.reporRespostasEquipa();
-////        gameState.reporOpcoesEscolhidas();
-////        int tempo = Constants.TIMOUT_SECS;
-////        timer = new Timer(tempo, barrier);
-////        timer.start();
-////    }
-//
-////    public void registarRespostaEquipa(Player jogador, int opcaoEscolhida) {
-////        if (jogador.getOpcaoEscolhida() != -1) {
-////            return;
-////        }
-////
-////        jogador.setOpcaoEscolhida(opcaoEscolhida);
-////        gameState.registarRespostaEquipa(equipaId);
-////        barrier.chegouJogador();
-////    }
-//
-//    public void esperarAteFimDaRonda(){
-//        try{
-//            barrier.await();
-//        }catch (InterruptedException e){
-//            Thread.currentThread().interrupt();
-//        }
-//    }
-//
-//    private void aplicarPontuacao(){
-//        Pergunta perguntaAtual = gameState.getPerguntaAtual();
-//        Player[] jogadores = gameState.getPlayersByTeam(equipaId);
-//        Team[] equipas = gameState.getEquipas();
-//
-//        int pontosPergunta = perguntaAtual.getPontos();
-//        int numRespostasCorretas = 0;
-//
-//        for(Player jogador : jogadores){
-//            if(perguntaAtual.verificarResposta(jogador.getOpcaoEscolhida())){
-//                numRespostasCorretas++;
-//            }
-//        }
-//        int pontosGanhos;
-//        if(numRespostasCorretas == jogadores.length){
-//            pontosGanhos = pontosPergunta * 2;
-//        }else if(numRespostasCorretas > 0){
-//            pontosGanhos = pontosPergunta;
-//        }else {
-//            pontosGanhos = 0;
-//        }
-//
-//        for(Player jogador : jogadores){
-//            jogador.adicionarPontos(pontosGanhos);
-//            gameStatistics.atualizaPontosJogadores(jogador.getId(), pontosGanhos);
-//        }
-//
-//        equipas[equipaId - 1].addPoints(pontosGanhos);
-//
-//        //gameEngine.equipaTerminou(equipaId);
-//    }
-//
-//
-//
-//}
+public class DealWithTeamAnswers {
+
+    private final GameState gameState;
+    private final int equipaId;
+    private Thread timerThread;
+
+    public DealWithTeamAnswers(GameState gameState, int equipaId) {
+        this.gameState = gameState;
+        this.equipaId = equipaId;
+    }
+
+    public void iniciarPerguntaEquipa(){
+        Team team = gameState.getTeam(equipaId);
+        if (team == null) return;
+
+        // start the team's barrier with an empty action (scoring is computed later by GameState.endRound)
+        team.startNewQuestion(() -> {});
+
+        int tempo = Constants.TIMOUT_SECS;
+
+        // start a simple timeout thread that calls team.timeout() after the timeout
+        timerThread = new Thread(() -> {
+            try {
+                Thread.sleep((long) tempo * 1000);
+                team.timeout();
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }, "TeamTimer-" + equipaId);
+
+        timerThread.start();
+    }
+
+    /**
+     * Register an answer from a player (by username). GameState.registerAnswer will locate the player
+     * and notify the team's barrier (team.playerAnswered()).
+     */
+    public void registarRespostaEquipa(String username, int opcaoEscolhida) {
+        gameState.registerAnswer(username, opcaoEscolhida);
+    }
+
+    public void esperarAteFimDaRonda(){
+        Team team = gameState.getTeam(equipaId);
+        if (team == null) return;
+        try{
+            team.awaitAll();
+        }catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public void cancelTimer() {
+        if (timerThread != null && timerThread.isAlive()) {
+            timerThread.interrupt();
+        }
+    }
+
+}
