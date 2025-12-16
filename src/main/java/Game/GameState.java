@@ -22,7 +22,6 @@ public class GameState {
         this.teamsMap = new HashMap<>();
     }
 
-    // Adiciona um time manualmente
     public void addTeam(int teamId, String teamName) {
         if (teamsMap.containsKey(teamId)) {
             throw new IllegalArgumentException("Team ID already exists: " + teamId);

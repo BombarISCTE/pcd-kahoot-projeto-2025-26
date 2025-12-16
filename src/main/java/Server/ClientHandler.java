@@ -7,6 +7,7 @@ import Game.Team;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -17,6 +18,7 @@ public class ClientHandler extends Thread {
     private final Socket socket;
     private final ObjectInputStream objectInputStream;
     private final ObjectOutputStream objectOutputStream;
+    private boolean handlerRunning;
 
     public ClientConnect clientConnected;
 
@@ -28,6 +30,7 @@ public class ClientHandler extends Thread {
     public ClientHandler(Socket socket, Server server) throws IOException {
         this.socket = socket;
         this.server = server;
+        handlerRunning = true;
 
         this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         this.objectOutputStream.flush();
@@ -36,31 +39,37 @@ public class ClientHandler extends Thread {
         synchronized(clientHandlers) { clientHandlers.add(this); }
     }
 
-    @Override
-    public void run() {
+    @Override public void run() {
         try {
-            // Primeira mensagem: ClientConnect
-            Object msg = objectInputStream.readObject();
-            if (msg instanceof ClientConnect connect) handleClientConnect(connect);
-
-            // Loop principal
-            while (!socket.isClosed()) {
-                Object message = objectInputStream.readObject();
-                handleMessage(message);
+            // primeira mensagem tem de ser do tipo ClientConnect
+        Object msg = objectInputStream.readObject();
+        if (msg instanceof ClientConnect connect) {
+            handleClientConnect(connect);
+        } System.out.println("client connect passed");
+        try {
+            while (!socket.isClosed() && server.isRunning()) { //stack overflowerror
+                if (objectInputStream != null) {
+                    Object message = objectInputStream.readObject();
+                    handleMessage(message);
+                }
             }
-        } catch (Exception e) {
+        } catch (EOFException | SocketException e) {
             System.out.println("Client disconnected: " +
                     (clientConnected != null ? clientConnected.username() : "unknown"));
-        } finally {
-            closeEverything();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    } catch (Exception e) {
+        System.out.println("Client disconnected: " + (clientConnected != null ? clientConnected.username() : "unknown"));
+    } finally { closeEverything(); }
     }
+
 
 
     private void handleMessage(Object message) {
         switch (message) {
 
-            case ClientConnect connect -> handleClientConnect(connect);
+            //case ClientConnect connect -> handleClientConnect(connect);
 
             case SendAnswer sa -> handleSendAnswer(sa);
 
@@ -70,7 +79,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleClientConnect(ClientConnect connect) {
+    private synchronized void handleClientConnect(ClientConnect connect) {
         System.out.println("handleClientConnect called");
         this.clientConnected = connect;
         this.gameId = connect.gameId();
@@ -103,8 +112,10 @@ public class ClientHandler extends Thread {
                 connectedPlayers.add(p.getName());
             }
         }
+        System.out.println("33333333333333");
 
         ClientConnectAck ack = new ClientConnectAck(connect.username(), gameId, connectedPlayers);
+        System.out.println("44444444444444");
         broadcastMessage(ack, gameId);
         System.out.println("end of handleClientConnect");
     }
@@ -186,7 +197,7 @@ public class ClientHandler extends Thread {
         }
 
         // Envia a primeira pergunta
-        SendQuestion questionMsg = game.createSendQuestion(30);
+        SendQuestion questionMsg = game.createSendQuestion(Utils.Constants.QUESTION_TIME_LIMIT);
         if (questionMsg != null) {
             broadcastMessage(questionMsg, gs.getGameId());
         }
@@ -197,10 +208,11 @@ public class ClientHandler extends Thread {
     public void broadcastMessage(Serializable message, int gameId) {
         synchronized (clientHandlers) {
             for (ClientHandler ch : clientHandlers) {
-                if (ch.gameId == gameId) ch.sendMessage(message);
+                if (ch.gameId == gameId && ch.isHandlerRunning()) ch.sendMessage(message);
             }
         }
     }
+    public boolean isHandlerRunning() {return handlerRunning;}
 
     public void sendMessage(Serializable message) {
         try {
@@ -220,30 +232,39 @@ public class ClientHandler extends Thread {
     }
 
     public void closeEverything() {
-        try {
-            // Remove o jogador da equipa
-            if (clientConnected != null && gameState != null) {
-                Team team = gameState.getTeam(clientConnected.teamId());
-                if (team != null) {
-                    team.getPlayers().removeIf(p -> p.getName().equals(clientConnected.username()));
-                }
-                //envia a lista atualizada de jogadores conectados
-                ArrayList<String> connectedPlayers = new ArrayList<>();
-                for (Team t : gameState.getTeams()) {
-                    for (Player p : t.getPlayers()) {
-                        connectedPlayers.add(p.getName());
-                    }
-                }
-                broadcastMessage(new ClientConnectAck("Server", gameId, connectedPlayers), gameId);
+        if (!handlerRunning) return;
+        handlerRunning = false;
+
+        synchronized (clientHandlers) {
+            clientHandlers.remove(this);
+        }
+
+        if (clientConnected != null && gameState != null) {
+            Team team = gameState.getTeam(clientConnected.teamId());
+            if (team != null) {
+                team.getPlayers().removeIf(p ->
+                        p.getName().equals(clientConnected.username()));
             }
 
-            synchronized (clientHandlers) {
-                clientHandlers.remove(this);
+            ArrayList<String> connectedPlayers = new ArrayList<>();
+            for (Team t : gameState.getTeams()) {
+                for (Player p : t.getPlayers()) {
+                    connectedPlayers.add(p.getName());
+                }
             }
+
+            broadcastMessage(
+                    new ClientConnectAck("Server", gameId, connectedPlayers),
+                    gameId
+            );
+        }
+
+        try {
             if (objectInputStream != null) objectInputStream.close();
             if (objectOutputStream != null) objectOutputStream.close();
             if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException ignored) {}
     }
+
 
 }
