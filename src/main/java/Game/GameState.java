@@ -1,8 +1,7 @@
 package Game;
 
-import Utils.ModifiedBarrier;
+import Utils.Constants;
 import Utils.Records.*;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,8 +16,8 @@ public class GameState {
 
     private Pergunta[] questions;
     private int currentQuestionIndex = 0;
+    public int getCurrentQuestionIndex() { return currentQuestionIndex; }
 
-    /* Atomic counter para ordem de resposta em perguntas individuais */
     private final AtomicInteger responseCounter = new AtomicInteger(0);
 
     public GameState(int numTeams, int playersPerTeam, int gameCode) {
@@ -28,37 +27,20 @@ public class GameState {
         this.teamsMap = new HashMap<>();
     }
 
-    /* =========================
-       Equipas
-       ========================= */
-
     public void addTeam(int teamId, String teamName) {
         if (teamsMap.containsKey(teamId)) throw new IllegalArgumentException("Team exists: " + teamId);
         teamsMap.put(teamId, new Team(teamName, teamId, playersPerTeam));
     }
 
     public Team getTeam(int teamId) { return teamsMap.get(teamId); }
-
     public ArrayList<Team> getTeams() { return new ArrayList<>(teamsMap.values()); }
-
     public int getGameCode() { return gameCode; }
-
-    /* =========================
-       Perguntas
-       ========================= */
-
     public void setQuestions(Pergunta[] questions) { this.questions = questions; }
-
     public Pergunta getCurrentQuestion() {
         if (questions == null || currentQuestionIndex >= questions.length) return null;
         return questions[currentQuestionIndex];
     }
-
     public boolean isCurrentQuestionIndividual() { return currentQuestionIndex % 2 == 0; }
-
-    /* =========================
-       Registro de respostas
-       ========================= */
 
     public void registerAnswer(String username, int option) {
         Pergunta current = getCurrentQuestion();
@@ -77,35 +59,27 @@ public class GameState {
                         int base = current.getPointsForAnswer(option);
                         if (order <= 2 && base > 0) base *= 2; // bónus 2 primeiros
                         p.addScore(base);
-                    } else if (!isCurrentQuestionIndividual()) {
-                        // Pergunta de equipa → chama barrier
-                        team.playerAnswered();
-                    }
 
+                    } else if (!isCurrentQuestionIndividual()) {
+                        team.playerAnswered(); // barrier para pergunta de equipa
+                    }
                     return;
                 }
             }
         }
     }
 
-    /* =========================
-       Fim de ronda
-       ========================= */
-
     public RoundResult endRound() {
-
         Pergunta current = getCurrentQuestion();
         if (current == null) return null;
 
         if (!isCurrentQuestionIndividual()) {
-            // Pergunta de equipa → aguardar barreira e distribuir pontuação
             for (Team team : teamsMap.values()) {
                 try { team.awaitAll(); } catch (InterruptedException ignored) {}
             }
         }
 
         HashMap<String, Integer> scores = getCurrentScores();
-
         responseCounter.set(0);
         currentQuestionIndex++;
         boolean gameEnded = currentQuestionIndex >= questions.length;
@@ -113,35 +87,27 @@ public class GameState {
         return new RoundResult(true, gameEnded, scores, getCurrentQuestion());
     }
 
-    /* =========================
-       Envio de perguntas
-       ========================= */
-
-    public Serializable createSendQuestion(int timeoutSeconds) {
+    public SendIndividualQuestion createSendIndividualQuestion() {
         Pergunta current = getCurrentQuestion();
-        if (current == null) return null;
+        if (current == null || !(current instanceof Pergunta.PerguntaIndividual)) return null;
+        return new SendIndividualQuestion(
+                current.getQuestion(),
+                current.getOptions(),
+                currentQuestionIndex,
+                Constants.QUESTION_TIME_LIMIT
+        );
+    }
 
-        if (isCurrentQuestionIndividual()) {
-            return new SendIndividualQuestion(
-                    current.getQuestion(),
-                    current.getOptions(),
-                    currentQuestionIndex,
-                    timeoutSeconds
-            );
-        }
-
+    public SendTeamQuestion createSendTeamQuestion() {
+        Pergunta current = getCurrentQuestion();
+        if (current == null || !(current instanceof Pergunta.PerguntaEquipa)) return null;
         return new SendTeamQuestion(
                 current.getQuestion(),
                 current.getOptions(),
                 currentQuestionIndex,
-                timeoutSeconds,
-                playersPerTeam
+                Constants.QUESTION_TIME_LIMIT
         );
     }
-
-    /* =========================
-       Pontuações
-       ========================= */
 
     private HashMap<String, Integer> getCurrentScores() {
         HashMap<String, Integer> map = new HashMap<>();

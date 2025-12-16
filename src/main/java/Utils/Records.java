@@ -35,18 +35,20 @@ public class Records {
 
     public record SendQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable { }
 
-    public record SendTeamQuestion(String question, String[] options, int questionNumber,
-                                   int timeLimit, int teamSize) implements Serializable {}
+    public record SendTeamQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable {}
 
 
-    public record SendIndividualQuestion(String question, String[] options, int questionNumber,
-                                      int timeLimit) implements Serializable {}
+    public record SendIndividualQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable {}
 
     /**
      * @param playerScores username -> pontuação
      */
     public record SendRoundStats(int gameId, HashMap<String, Integer> playerScores) implements Serializable {
     }
+
+    public record ErrorMessage(String message) implements Serializable { }
+
+    public record FatalErrorMessage(String message) implements Serializable { }
 
     public static class GameEnded implements Serializable {
         private final int gameId;

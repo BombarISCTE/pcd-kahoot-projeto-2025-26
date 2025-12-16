@@ -1,6 +1,6 @@
 package Game;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
 
 import java.io.*;
 
@@ -75,12 +75,32 @@ public abstract class Pergunta {
         return String.valueOf(newPath);
     }
 
+    //como Perguntas é abstract, o Json nao converte diretamente para Pergunta
     public static Pergunta[] lerPerguntas(String filePath) throws IOException {
         String newPath = convertTxtToJsonPath(filePath);
         try (FileReader reader = new FileReader(newPath)) {
-            return new Gson().fromJson(reader, Pergunta[].class);
+            Gson gson = new Gson();
+            JsonElement root = JsonParser.parseReader(reader); //ler o conteúdo do ficheiro JSON
+            JsonArray arr = root.getAsJsonArray(); //obter o array de perguntas
+            Pergunta[] perguntas = new Pergunta[arr.size()]; //criar um array de perguntas com o tamanho do array JSON
+
+            for (int i = 0; i < arr.size(); i++) {
+                JsonObject obj = arr.get(i).getAsJsonObject();
+                String question = obj.get("question").getAsString();
+                int points = obj.get("points").getAsInt();
+                int correct = obj.get("correct").getAsInt();
+                String[] options = gson.fromJson(obj.get("options"), String[].class);
+
+                if (i % 2 == 0) {
+                    perguntas[i] = new Pergunta.PerguntaIndividual(question, correct, points, options);
+                } else {
+                    perguntas[i] = new Pergunta.PerguntaEquipa(question, correct, points, options);
+                }
+            }
+            return perguntas;
         }
     }
+
 
 
 

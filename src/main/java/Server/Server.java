@@ -27,25 +27,33 @@ public class Server {
 
 
     public void startServer() {
-        startTUI(); // iniciar a TUI numa thread separada
+        startTUI(); // inicia a TUI numa thread separada
 
-        try {
-            while (!serverSocket.isClosed() && isRunning) {
+        while (!serverSocket.isClosed() && isRunning) {
+            try {
                 Socket socket = serverSocket.accept();
-                System.out.println("Server - New client connected: " + socket.getInetAddress().getHostAddress());
-                ClientHandler clientHandler = new ClientHandler(socket, this);
+                System.out.println("Server - New client connected: " +
+                        socket.getInetAddress().getHostAddress());
 
+                try {
+                    ClientHandler clientHandler = new ClientHandler(socket, this);
+                    new Thread(clientHandler).start();
+                } catch (IOException e) {
+                    System.out.println("Server - Falha ao criar ClientHandler para cliente");
+                    socket.close();
+                }
 
-                Thread thread = new Thread(clientHandler);
-                thread.start();
+            } catch (IOException e) {
+                if (isRunning) {
+                    System.out.println("Server - Erro ao aceitar cliente: " + e.getMessage());
+                }
+                break;
             }
-        } catch (IOException e) {
-            System.out.println("Erro ao iniciar o servidor: " + e.getMessage());
-            closeServerSocket();
-            e.printStackTrace();
-
         }
+
+        closeServerSocket();
     }
+
 
     public void startTUI() {
         Thread tuiThread = new Thread(() -> {
@@ -53,7 +61,7 @@ public class Server {
             try {
                 tui.menu();
             } catch (IOException e) {
-                System.out.println("Erro na TUI: " + e.getMessage());
+                System.out.println("S startTUI - Erro na TUI: " + e.getMessage());
             }
         });
         tuiThread.start();
@@ -91,9 +99,9 @@ public class Server {
 
     public synchronized void listGames() {
         if (games.isEmpty()) {
-            System.out.println("No active games.");
+            System.out.println("S listGames - No active games.");
         } else {
-            System.out.println("Active games:");
+            System.out.println("S listGames -Active games:");
             for (GameState game : games.values()) {
                 System.out.println(game);
             }

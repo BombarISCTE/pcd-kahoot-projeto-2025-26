@@ -36,7 +36,7 @@ public class Client implements Runnable, Serializable {
             gui = new ClientGUI(this);
             listenForMessages();
         } catch (Exception e) {
-            System.err.println("Cliente encerrou: " + e.getMessage());
+            System.err.println("C run - Cliente encerrou: " + e.getMessage());
         } finally {
             closeEverything();
         }
@@ -44,7 +44,7 @@ public class Client implements Runnable, Serializable {
 
     private void connectToServer() throws IOException {
         socket = new Socket(serverIP, serverPort);
-        System.out.println("Conectado ao servidor: " + serverIP + ":" + serverPort);
+        System.out.println("C connectedToServer - Conectado ao servidor: " + serverIP + ":" + serverPort);
 
         objectOut = new ObjectOutputStream(socket.getOutputStream());
         objectOut.flush();
@@ -58,12 +58,17 @@ public class Client implements Runnable, Serializable {
             while (socket != null && socket.isConnected()) {
                 try {
                     Object msg = objectIn.readObject();
+                    System.out.println("C listenForMessages - Mensagem do tipo " + msg.getClass().getSimpleName() + " recebida do servidor.");
 
                     switch (msg.getClass().getSimpleName()) {
-                        case "SendQuestion" -> {
-                            SendQuestion sq = (SendQuestion) msg;
-                            Pergunta p = new Pergunta(sq.question(), -1, 0, sq.options());
-                            gui.mostrarNovaPergunta(p, sq.questionNumber());
+                        case "SendTeamQuestion" -> {
+                            SendTeamQuestion question = (SendTeamQuestion) msg;
+                            gui.mostrarNovaPergunta(question);
+                        }
+
+                        case "SendIndividualQuestion" -> {
+                            SendIndividualQuestion question = (SendIndividualQuestion) msg;
+                            gui.mostrarNovaPergunta(question);
                         }
 
                         case "SendRoundStats" -> {
@@ -74,27 +79,35 @@ public class Client implements Runnable, Serializable {
                         case "SendFinalScores" -> {
                             SendFinalScores sfs = (SendFinalScores) msg;
                             gui.gameEnded(new HashMap<>(sfs.finalScores()));
+                            closeEverything();
                         }
 
                         case "ClientConnectAck" -> {
                             ClientConnectAck ack = (ClientConnectAck) msg;
                             gui.setConnectedPlayers(ack.connectedPlayers());
                         }
+                        case "FatalErrorMessage" -> {
+                            FatalErrorMessage error = (FatalErrorMessage) msg;
+                            System.err.println("C - listenForMessages - Erro do servidor: " + error.message());
+                            closeEverything();
+                        }
 
-
-                        default -> System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
+                        default -> System.out.println("C listenForMessages - Mensagem recebida de tipo desconhecido: " + msg);
                     }
 
-                } catch (IOException e) {
-                    System.err.println("Erro ao receber mensagem do servidor: " + e.getMessage());
+                } catch (IOException e) { //esta a lancar ioexception
+                    System.err.println("C listenForMessages - Erro ao receber mensagem do servidor: " + e.getMessage());
                     closeEverything();
                     break;
                 } catch (ClassNotFoundException e) {
-                    System.err.println("Classe não encontrada ao receber mensagem: " + e.getMessage());
+                    System.err.println("C listenForMessages - Classe não encontrada ao receber mensagem: " + e.getMessage());
                 }
             }
         }).start();
     }
+
+
+
 
     public void sendMessage(Serializable message) {
         try {
@@ -103,8 +116,7 @@ public class Client implements Runnable, Serializable {
                 objectOut.flush();
             }
         } catch (IOException e) {
-            System.err.println("Erro ao enviar mensagem: " + e.getMessage());
-            closeEverything();
+            System.err.println("C sendMessage- Erro ao enviar mensagem: " + e.getMessage());
         }
     }
 
@@ -116,6 +128,7 @@ public class Client implements Runnable, Serializable {
         } catch (IOException ignored) {}
     }
 
+
     public String getUsername() {
         return username;
     }
@@ -124,11 +137,14 @@ public class Client implements Runnable, Serializable {
         String serverIP = "localhost";
         int serverPort = 8008;
 
-        int gameId = 1;
+        int gameId = 1000000;
         int teamId = 2;
         String username = "2";
-        Client client = new Client(serverIP, serverPort, gameId, teamId, username);
+        Client client = new Client(serverIP, serverPort, gameId, teamId, "player1");
         new Thread(client).start();
+
+        Client client2 = new Client(serverIP, serverPort, gameId+1, teamId, "Player2");
+        new Thread(client2).start();
 
 
     }

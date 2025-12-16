@@ -1,8 +1,7 @@
 package Client;
 
-import Game.Pergunta;
 import Utils.Constants;
-import Utils.Records;
+import Utils.Records.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,12 +10,15 @@ import java.util.HashMap;
 
 public class ClientGUI extends JFrame {
 
-    JLabel mensagemEspaco;
+    private JLabel mensagemEspaco;
     private JLabel perguntaEspaco;
     private JButton[] opcoesBotoes = new JButton[4];
-    private JLabel[] playerScoreLabels; // para atualizar o placar dinamicamente
-    private Pergunta currentQuestion;
+    private JLabel[] playerScoreLabels;
     private final Client client;
+
+    private int currentQuestionNumber;
+    private Timer countdownTimer;
+    private int tempoRestante;
 
     public ClientGUI(Client client) {
         this.client = client;
@@ -27,7 +29,6 @@ public class ClientGUI extends JFrame {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setSize(500, 400);
         this.setLayout(new BorderLayout(10, 10));
-        getRootPane().setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Pergunta
         perguntaEspaco = new JLabel("Aguardando pergunta...", SwingConstants.CENTER);
@@ -35,7 +36,7 @@ public class ClientGUI extends JFrame {
 
         // Painel central com opções
         JPanel painelCentral = new JPanel(new BorderLayout(10, 10));
-        JPanel painelOpcoes = new JPanel(new GridLayout(2, 2, 10, 10));
+        JPanel painelOpcoes = new JPanel(new GridLayout(2, 2, 5, 5));
         for (int i = 0; i < opcoesBotoes.length; i++) {
             JButton btn = new JButton("Opção " + (i + 1));
             int index = i;
@@ -58,26 +59,24 @@ public class ClientGUI extends JFrame {
         this.add(painelCentral, BorderLayout.CENTER);
 
         // Mensagem inferior
-        JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
         mensagemEspaco = new JLabel("Conectando...", SwingConstants.CENTER);
-        painelInferior.add(mensagemEspaco, BorderLayout.CENTER);
-        this.add(painelInferior, BorderLayout.SOUTH);
+        this.add(mensagemEspaco, BorderLayout.SOUTH);
 
         this.setVisible(true);
     }
 
     private void enviarResposta(int optionIndex) {
-        if (currentQuestion == null) return;
+        if (currentQuestionNumber < 0) return;
 
-        client.sendMessage(new Records.SendAnswer(
+        client.sendMessage(new SendAnswer(
                 client.getUsername(),
                 optionIndex,
-                0 // pode passar o questionNumber se necessário
+                currentQuestionNumber
         ));
 
-        // Desativa os botões até receber a próxima pergunta
         setOptionsEnabled(false);
         mensagemEspaco.setText("Resposta enviada!");
+        if (countdownTimer != null) countdownTimer.stop();
     }
 
     private void setOptionsEnabled(boolean enabled) {
@@ -85,6 +84,7 @@ public class ClientGUI extends JFrame {
             btn.setEnabled(enabled);
         }
     }
+
     public void setConnectedPlayers(ArrayList<String> players) {
         playerScoreLabels = new JLabel[players.size()];
         JPanel placarPontos = new JPanel(new GridLayout(players.size(), 1, 5, 5));
@@ -95,25 +95,23 @@ public class ClientGUI extends JFrame {
             placarPontos.add(playerScoreLabels[i]);
         }
 
-
-        this.removeAll(); // ou remover apenas o placar antigo
         this.add(placarPontos, BorderLayout.EAST);
         this.revalidate();
         this.repaint();
     }
 
+    public void mostrarNovaPergunta(SendTeamQuestion question) {
+        mostrarPerguntaGenerica(question.question(), question.options(), question.questionNumber(), question.timeLimit());
+    }
 
-    public void mostrarNovaPergunta(Pergunta pergunta, int questionIndex) {
-        if (pergunta == null) {
-            perguntaEspaco.setText("Fim do jogo ou sem perguntas.");
-            setOptionsEnabled(false);
-            return;
-        }
+    public void mostrarNovaPergunta(SendIndividualQuestion question) {
+        mostrarPerguntaGenerica(question.question(), question.options(), question.questionNumber(), question.timeLimit());
+    }
 
-        currentQuestion = pergunta;
-        perguntaEspaco.setText(pergunta.getQuestion());
+    private void mostrarPerguntaGenerica(String pergunta, String[] opcoes, int questionNumber, int timeLimit) {
+        currentQuestionNumber = questionNumber;
+        perguntaEspaco.setText(pergunta);
 
-        String[] opcoes = pergunta.getOptions();
         for (int i = 0; i < opcoesBotoes.length; i++) {
             if (i < opcoes.length) {
                 opcoesBotoes[i].setText(opcoes[i]);
@@ -123,7 +121,20 @@ public class ClientGUI extends JFrame {
             }
         }
 
-        mensagemEspaco.setText("Tempo restante: " + Constants.QUESTION_TIME_LIMIT + "s");
+        tempoRestante = timeLimit;
+        mensagemEspaco.setText("Tempo restante: " + tempoRestante + "s");
+
+        if (countdownTimer != null) countdownTimer.stop();
+        countdownTimer = new Timer(1000, e -> {
+            tempoRestante--;
+            mensagemEspaco.setText("Tempo restante: " + tempoRestante + "s");
+            if (tempoRestante <= 0) {
+                ((Timer) e.getSource()).stop();
+                setOptionsEnabled(false);
+                mensagemEspaco.setText("Tempo esgotado!");
+            }
+        });
+        countdownTimer.start();
     }
 
     public void atualizarPlacar(HashMap<String, Integer> scores) {
