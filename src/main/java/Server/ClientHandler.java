@@ -1,5 +1,7 @@
 package Server;
 
+import Game.Pergunta;
+import Utils.Constants;
 import Utils.Records.*;
 import Game.GameState;
 import Game.Player;
@@ -14,23 +16,21 @@ import java.util.HashMap;
 public class ClientHandler extends Thread {
 
     private final Server server;
-    static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
     private final Socket socket;
     private final ObjectInputStream objectInputStream;
     private final ObjectOutputStream objectOutputStream;
-    private boolean handlerRunning;
-
+    private boolean handlerRunning=true;
     public ClientConnect clientConnected;
 
+    private GameState gameState;
+    private int gameId;
     public int getGameId() {return gameId;}
 
-    private int gameId;
-    private GameState gameState;
+    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
 
     public ClientHandler(Socket socket, Server server) throws IOException {
         this.socket = socket;
         this.server = server;
-        handlerRunning = true;
 
         this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         this.objectOutputStream.flush();
@@ -39,35 +39,35 @@ public class ClientHandler extends Thread {
         synchronized(clientHandlers) { clientHandlers.add(this); }
     }
 
-    @Override public void run() {
+    @Override
+    public void run() {
         try {
-            // primeira mensagem tem de ser do tipo ClientConnect
-        Object msg = objectInputStream.readObject();
-        if (msg instanceof ClientConnect connect) {
-            handleClientConnect(connect);
-        } System.out.println("client connect passed");
-        try {
-            while (!socket.isClosed() && server.isRunning()) { //stack overflowerror
-                if (objectInputStream != null) {
-                    Object message = objectInputStream.readObject();
-                    handleMessage(message);
-                }
+            // Primeira mensagem tem de ser ClientConnect
+            Object firstMsg = objectInputStream.readObject();
+            if (firstMsg instanceof ClientConnect connect) {
+                handleClientConnect(connect);
             }
-        } catch (EOFException | SocketException e) {
-            System.out.println("Client disconnected: " +
+
+            while (handlerRunning && !socket.isClosed()) {
+                Object msg = objectInputStream.readObject();
+                handleMessage(msg);
+            }
+
+        } catch (SocketException | EOFException e) {
+            System.out.println("Cliente desconectou: " +
                     (clientConnected != null ? clientConnected.username() : "unknown"));
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            closeEverything();
         }
-    } catch (Exception e) {
-        System.out.println("Client disconnected: " + (clientConnected != null ? clientConnected.username() : "unknown"));
-    } finally { closeEverything(); }
     }
 
 
 
-    private void handleMessage(Object message) {
-        switch (message) {
+
+        private void handleMessage(Object message) {
+        switch (message) { //todo msg.getClass().getSimpleName() ?
 
             //case ClientConnect connect -> handleClientConnect(connect);
 
@@ -80,91 +80,130 @@ public class ClientHandler extends Thread {
     }
 
     private synchronized void handleClientConnect(ClientConnect connect) {
-        System.out.println("handleClientConnect called");
         this.clientConnected = connect;
         this.gameId = connect.gameId();
         this.gameState = server.getGame(gameId);
+
+        // Se equipa não existir, cria
         Team team = gameState.getTeam(connect.teamId());
         if (team == null) {
-            // Se a equipa não existir ainda, cria e adiciona ao GameState
             gameState.addTeam(connect.teamId(), "Team " + connect.teamId());
             team = gameState.getTeam(connect.teamId());
         }
 
-        System.out.println("111111111111");
-
-        // Pega o ID do player a partir do Server
+        // Cria player
         int playerId = server.generatePlayerId();
-        System.out.println("Generated playerId: " + playerId);
         Player player = new Player(playerId, connect.username());
-        System.out.println("team" + team);
-        System.out.println("Created player: " + player.getName() + " with ID: " + player.getId());
-        System.out.println("max players per team: " + team.getMaxPlayersPerTeam());
-        System.out.println("team current players: " + team.getPlayers().size());
-
         team.addPlayer(player);
 
-        System.out.println("22222222222222222222");
-        // Lista de jogadores conectados no jogo
-        ArrayList<String> connectedPlayers = new ArrayList<>();
+        // Envia lista atualizada de jogadores conectados
+        broadcastConnectedPlayers();
+    }
+
+    private void broadcastConnectedPlayers() {
+        ArrayList<String> connected = new ArrayList<>();
         for (Team t : gameState.getTeams()) {
-            for (Player p : t.getPlayers()) {
-                connectedPlayers.add(p.getName());
-            }
+            for (Player p : t.getPlayers()) connected.add(p.getName());
         }
-        System.out.println("33333333333333");
-
-        ClientConnectAck ack = new ClientConnectAck(connect.username(), gameId, connectedPlayers);
-        System.out.println("44444444444444");
-        broadcastMessage(ack, gameId);
-        System.out.println("end of handleClientConnect");
+        broadcastMessage(new ClientConnectAck("Server", gameId, connected), gameId);
     }
 
+//    private synchronized void handleClientConnect(ClientConnect connect) {
+//        System.out.println("handleClientConnect called");
+//        this.clientConnected = connect;
+//        this.gameId = connect.gameId();
+//        this.gameState = server.getGame(gameId);
+//        Team team = gameState.getTeam(connect.teamId());
+//        if (team == null) {
+//            // Se a equipa não existir ainda, cria e adiciona ao GameState
+//            gameState.addTeam(connect.teamId(), "Team " + connect.teamId());
+//            team = gameState.getTeam(connect.teamId());
+//        }
+//
+//        System.out.println("111111111111");
+//
+//        // Pega o ID do player a partir do Server
+//        int playerId = server.generatePlayerId();
+//        System.out.println("Generated playerId: " + playerId);
+//        Player player = new Player(playerId, connect.username());
+//        System.out.println("team" + team);
+//        System.out.println("Created player: " + player.getName() + " with ID: " + player.getId());
+//        System.out.println("max players per team: " + team.getMaxPlayersPerTeam());
+//        System.out.println("team current players: " + team.getPlayers().size());
+//
+//        team.addPlayer(player);
+//
+//        System.out.println("22222222222222222222");
+//        // Lista de jogadores conectados no jogo
+//        ArrayList<String> connectedPlayers = new ArrayList<>();
+//        for (Team t : gameState.getTeams()) {
+//            for (Player p : t.getPlayers()) {
+//                connectedPlayers.add(p.getName());
+//            }
+//        }
+//        System.out.println("33333333333333");
+//
+//        ClientConnectAck ack = new ClientConnectAck(connect.username(), gameId, connectedPlayers);
+//        System.out.println("44444444444444");
+//        broadcastMessage(ack, gameId);
+//        System.out.println("end of handleClientConnect");
+//    }
 
 
 
-    private void sendNextQuestion(GameState game, int timeoutSeconds) {
-        for (Team t : game.getTeams()) {
-            t.startNewQuestion(() -> checkAllTeamsFinished(game));
-        }
-        sendQuestionWithTimer(timeoutSeconds);
-    }
 
     private void checkAllTeamsFinished(GameState game) {
-        boolean allFinished = true;
-        for (Team t : game.getTeams()) {
-            if (!t.isRoundFinished()) {
-                allFinished = false;
-                break;
-            }
+        boolean allFinished = game.getTeams().stream().allMatch(Team::isRoundFinished);
+        if (allFinished) {
+            RoundResult result = game.endRound();
+            broadcastMessage(new SendRoundStats(game.getGameCode(), result.playerScores()), game.getGameCode());
+
+            if (!result.gameEnded()) sendNextQuestion(game);
+            else broadcastMessage(game.getFinalScores(), game.getGameCode());
         }
-        if (allFinished) {sendRoundResultsAndNext();}
     }
 
 
 
-    private void sendQuestionWithTimer(int timeoutSeconds) {
-        SendQuestion questionMsg = gameState.createSendQuestion(timeoutSeconds);
-        if (questionMsg == null) return;
+    private void sendNextQuestion(GameState gameState) {
+        // Inicializa barreiras para perguntas de equipa
+        int timeoutSeconds = Constants.QUESTION_TIME_LIMIT;
+        Pergunta current = gameState.getCurrentQuestion();
+        if (current != null && !(current instanceof Pergunta.PerguntaIndividual)) {
+            for (Team t : gameState.getTeams()) {
+                t.startNewQuestion(() -> {
+                    // Esta ação é chamada quando todos os jogadores da equipa responderam ou timeout
+                    int score = t.calculateQuestionScore(current);
+                    t.setPlayersRoundScore(score);
+                    // Verifica se todas as equipas terminaram a ronda
+                    checkAllTeamsFinished(gameState);
+                });
+            }
+        }
+        Serializable questionMsg = gameState.createSendQuestion(timeoutSeconds);
+        if (questionMsg != null) broadcastMessage(questionMsg, gameState.getGameCode());
 
-        broadcastMessage(questionMsg, gameId);
-
+        // Timeout global
         new Thread(() -> {
             try {
                 Thread.sleep(timeoutSeconds * 1000);
                 synchronized (gameState) {
-                    sendRoundResultsAndNext();
+                    RoundResult result = gameState.endRound();
+                    broadcastMessage(new SendRoundStats(gameState.getGameCode(), result.playerScores()), gameState.getGameCode());
+                    if (!result.gameEnded()) sendNextQuestion(gameState);
+                    else broadcastMessage(gameState.getFinalScores(), gameState.getGameCode());
                 }
             } catch (InterruptedException ignored) {}
         }).start();
     }
+
 
     private void sendRoundResultsAndNext() {
         RoundResult result = gameState.endRound();
         broadcastMessage(new SendRoundStats(gameId, result.playerScores()), gameId);
 
         if (!result.gameEnded()) {
-            sendQuestionWithTimer(30);
+            sendNextQuestion(gameState);
         } else {
             broadcastMessage(new GameEnded(gameId), gameId);
             broadcastMessage(gameState.getFinalScores(), gameId);
@@ -173,15 +212,17 @@ public class ClientHandler extends Thread {
 
     private void handleSendAnswer(SendAnswer sa) {
         gameState.registerAnswer(sa.username(), sa.selectedOption());
-        boolean roundDone = true;
-        for (Team t : gameState.getTeams()) {
-            if (!t.isRoundFinished()) {
-                roundDone = false;
-                break;
+
+        if (!gameState.isCurrentQuestionIndividual()) {
+            Team team = null;
+            for (Team t : gameState.getTeams()) {
+                if (t.getPlayers().stream().anyMatch(p -> p.getName().equals(sa.username()))) {
+                    team = t;
+                    break;
+                }
             }
+            if (team != null) team.playerAnswered(); // ativa barreira
         }
-        if (roundDone) {
-            sendRoundResultsAndNext();}
     }
 
 
@@ -189,19 +230,10 @@ public class ClientHandler extends Thread {
         GameState game = server.getGame(gs.getGameId());
         if (game == null) return;
 
-        // Inicializa a barrier para cada equipa com ação de enviar resultados
-        for (Team t : game.getTeams()) {
-            if (!t.getPlayers().isEmpty()) {
-                t.startNewQuestion(this::sendRoundResultsAndNext);
-            }
-        }
-
-        // Envia a primeira pergunta
-        SendQuestion questionMsg = game.createSendQuestion(Utils.Constants.QUESTION_TIME_LIMIT);
-        if (questionMsg != null) {
-            broadcastMessage(questionMsg, gs.getGameId());
-        }
+        sendNextQuestion(game);
     }
+
+
 
 
 
@@ -231,32 +263,53 @@ public class ClientHandler extends Thread {
         }
     }
 
+//    public void closeEverything() {
+//        if (!handlerRunning) return;
+//        handlerRunning = false;
+//
+//        synchronized (clientHandlers) {
+//            clientHandlers.remove(this);
+//        }
+//
+//        if (clientConnected != null && gameState != null) {
+//            Team team = gameState.getTeam(clientConnected.teamId());
+//            if (team != null) {
+//                team.getPlayers().removeIf(p ->
+//                        p.getName().equals(clientConnected.username()));
+//            }
+//
+//            ArrayList<String> connectedPlayers = new ArrayList<>();
+//            for (Team t : gameState.getTeams()) {
+//                for (Player p : t.getPlayers()) {
+//                    connectedPlayers.add(p.getName());
+//                }
+//            }
+//
+//            broadcastMessage(
+//                    new ClientConnectAck("Server", gameId, connectedPlayers),
+//                    gameId
+//            );
+//        }
+//
+//        try {
+//            if (objectInputStream != null) objectInputStream.close();
+//            if (objectOutputStream != null) objectOutputStream.close();
+//            if (socket != null && !socket.isClosed()) socket.close();
+//        } catch (IOException ignored) {}
+//    }
+
     public void closeEverything() {
         if (!handlerRunning) return;
         handlerRunning = false;
 
-        synchronized (clientHandlers) {
-            clientHandlers.remove(this);
-        }
+        synchronized (clientHandlers) { clientHandlers.remove(this); }
 
         if (clientConnected != null && gameState != null) {
             Team team = gameState.getTeam(clientConnected.teamId());
             if (team != null) {
-                team.getPlayers().removeIf(p ->
-                        p.getName().equals(clientConnected.username()));
+                team.getPlayers().removeIf(p -> p.getName().equals(clientConnected.username()));
             }
-
-            ArrayList<String> connectedPlayers = new ArrayList<>();
-            for (Team t : gameState.getTeams()) {
-                for (Player p : t.getPlayers()) {
-                    connectedPlayers.add(p.getName());
-                }
-            }
-
-            broadcastMessage(
-                    new ClientConnectAck("Server", gameId, connectedPlayers),
-                    gameId
-            );
+            broadcastConnectedPlayers();
         }
 
         try {

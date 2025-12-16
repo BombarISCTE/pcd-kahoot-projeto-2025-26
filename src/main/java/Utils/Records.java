@@ -29,10 +29,18 @@ public class Records {
         public int getGameId() { return gameId; }
     }
 
-    public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores, Pergunta nextQuestion) implements Serializable { }
+    public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores,
+                              Pergunta nextQuestion) implements Serializable { }
 
 
     public record SendQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable { }
+
+    public record SendTeamQuestion(String question, String[] options, int questionNumber,
+                                   int timeLimit, int teamSize) implements Serializable {}
+
+
+    public record SendIndividualQuestion(String question, String[] options, int questionNumber,
+                                      int timeLimit) implements Serializable {}
 
     /**
      * @param playerScores username -> pontuação

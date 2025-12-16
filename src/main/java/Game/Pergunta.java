@@ -4,13 +4,12 @@ import com.google.gson.Gson;
 
 import java.io.*;
 
-public class Pergunta {
+public abstract class Pergunta {
 
-    private String question;
-    private int points;
-    private int correct;
-
-    private String[] options;
+    protected String question;
+    protected int points;
+    protected int correct;
+    protected String[] options;
 
     public Pergunta(String question,  int correct,int points, String[] options) {
         this.question = question;
@@ -136,6 +135,34 @@ public class Pergunta {
 
         } catch (IOException e) {
             System.err.println("Erro ao ler o ficheiro de perguntas: " + e.getMessage());
+        }
+    }
+
+    public abstract int calcularPontuacao(int choice);
+
+    //  subclasses ------------------------------------------
+
+    public static class PerguntaIndividual extends Pergunta {
+
+        public PerguntaIndividual(String question, int correct, int points, String[] options) {
+            super(question, correct, points, options);
+        }
+
+        @Override
+        public int calcularPontuacao(int choice) {
+            return isCorrect(choice) ? points : 0;
+        }
+    }
+
+    public static class PerguntaEquipa extends Pergunta {
+
+        public PerguntaEquipa(String question, int correct, int points, String[] options) {
+            super(question, correct, points, options);
+        }
+
+        @Override
+        public int calcularPontuacao(int choice) {
+            return isCorrect(choice) ? points : 0;
         }
     }
 
