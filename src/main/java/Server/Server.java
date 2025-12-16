@@ -31,7 +31,7 @@ public class Server {
             while (!serverSocket.isClosed() && isRunning) {
                 Socket socket = serverSocket.accept();
                 System.out.println("Server - New client connected: " + socket.getInetAddress().getHostAddress());
-                ClientHandler clientHandler = new ClientHandler(socket);
+                ClientHandler clientHandler = new ClientHandler(socket, this);
 
 
                 Thread thread = new Thread(clientHandler);
@@ -51,7 +51,7 @@ public class Server {
         Thread tuiThread = new Thread(() -> {
             TUI tui = new TUI(this);
             try {
-                tui.menuConsola();
+                tui.menu();
             } catch (IOException e) {
                 System.out.println("Erro na TUI: " + e.getMessage());
             }
@@ -92,6 +92,8 @@ public class Server {
             }
         }
     }
+
+    public void questionTimeout(){} //todo
 
 
 

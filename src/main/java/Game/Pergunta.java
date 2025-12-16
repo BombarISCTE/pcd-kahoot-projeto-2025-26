@@ -19,11 +19,11 @@ public class Pergunta {
         this.options = options;
     }
 
-    public String getQuestao() {
+    public String getQuestion() {
         return question;
     }
 
-    public int getPontos() {
+    public int getPoints() {
         return points;
     }
 
@@ -31,10 +31,20 @@ public class Pergunta {
         return correct;
     }
 
-    public String[] getOpcoes() {
+    public String[] getOptions() {
         return options;
     }
 
+    public String getOption(int index) {
+        if (index < 0 || index >= options.length) return null;
+        return options[index];
+    }
+
+    public boolean isCorrect(int choice) {return correct == choice;}
+
+    public int getPointsForAnswer(int choice) {return isCorrect(choice) ? points : 0;}
+
+    public String toJson() {return new Gson().toJson(this);}
 
     public boolean verificarResposta(int opcaoEscolhida) {return correct == opcaoEscolhida;} //é opcaoEscolhida é um int
 
@@ -78,7 +88,6 @@ public class Pergunta {
     public static void txtTrimmer(String inputFilePath, String outputFilePath) throws IOException {
         StringBuilder sb = new StringBuilder();
 
-        // 1. Ler tudo para uma única String
         try (BufferedReader br = new BufferedReader(new FileReader(inputFilePath))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -87,20 +96,22 @@ public class Pergunta {
         }
         String json = sb.toString();
 
-        // 2. Limpar keys com espaços: "  question  " -> "question"
+        // Limpar keys com espaços: "  question  " -> "question"
         json = json.replaceAll("\"\\s*(.*?)\\s*\"\\s*:", "\"$1\":");
 
-        // 3. Limpar valores string: "  Resposta  " -> "Resposta"
+        // Limpar valores string: "  Resposta  " -> "Resposta"
         json = json.replaceAll(":\\s*\"\\s*(.*?)\\s*\"", ": \"$1\"");
 
-        // 4. Limpar strings dentro de arrays: "   Valor   " -> "Valor"
+        // Limpar strings dentro de arrays: "   Valor   " -> "Valor"
         json = json.replaceAll("\"\\s+(.*?)\\s+\"", "\"$1\"");
 
-        // 5. Guardar o JSON limpo
+        // Guardar o JSON limpo
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
             bw.write(json);
         }
     }
+
+
 
     public static void main(String[] args) {
 
@@ -127,7 +138,5 @@ public class Pergunta {
             System.err.println("Erro ao ler o ficheiro de perguntas: " + e.getMessage());
         }
     }
-
-
 
 }

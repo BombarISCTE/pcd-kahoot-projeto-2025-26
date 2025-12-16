@@ -1,132 +1,97 @@
 package Game;
 
 import Utils.Constants;
-import Utils.Records;
 import Utils.Records.*;
-import java.util.*;
+import java.util.ArrayList;
 
 public class GameState {
 
     private final int gameCode;
-    private final int numEquipas;
-    private final int numJogadoresEquipa;
+    private final ArrayList<Team> teams = new ArrayList<>();
+    private Pergunta[] questions;
+    private int currentQuestionIndex = 0;
 
-    private final Team[] equipas;
-    private Pergunta[] perguntas;
-    private int indicePerguntaAtual = 0;
-
-    private final Map<String, Player> players = new HashMap<>();
-
-    public Map<Integer, List<Player>> getPlayersByTeam() {
-        return playersByTeam;
-    }
-
-    public Map<String, Integer> getTeamByPlayer() {
-        return teamByPlayer;
-    }
-
-    public Map<String, Player> getPlayers() {
-        return players;
-    }
-
-    private final Map<Integer, List<Player>> playersByTeam = new HashMap<>();
-    private final Map<String, Integer> teamByPlayer = new HashMap<>();
-
-    private int respostasRecebidas = 0;
-    private final HashSet<String> respondedPlayers = new HashSet<>();
-    private int timoutSeconds = Constants.TIMOUT_SECS;
-
-    public GameState(int numEquipas, int numJogadoresEquipa, int gameCode) {
-        this.numEquipas = numEquipas;
-        this.numJogadoresEquipa = numJogadoresEquipa;
+    public GameState(int numTeams, int playersPerTeam, int gameCode) {
         this.gameCode = gameCode;
-
-        equipas = new Team[numEquipas];
-        for (int i = 0; i < numEquipas; i++) {
-            equipas[i] = new Team("Equipa " + (i + 1), i);
-            playersByTeam.put(i, new ArrayList<>());
+        for (int i = 0; i < numTeams; i++) {
+            teams.add(new Team("Team " + (i + 1), i));
         }
     }
 
-    public void setPerguntas(Pergunta[] perguntas) {
-        this.perguntas = perguntas;
+    public ArrayList<Team> getTeams() {
+        return teams;
     }
 
-    public Pergunta getPerguntaAtual() {
-        if (perguntas == null || indicePerguntaAtual >= perguntas.length) return null;
-        return perguntas[indicePerguntaAtual];
+    public void setQuestions(Pergunta[] questions) {
+        this.questions = questions;
     }
 
-    public synchronized int getIndicePerguntaAtual() {
-        return indicePerguntaAtual;
+    public Pergunta getCurrentQuestion() {
+        if (questions == null || currentQuestionIndex >= questions.length) return null;
+        return questions[currentQuestionIndex];
     }
 
-    public synchronized int getGameCode() {
+    public int getGameCode() {
         return gameCode;
     }
 
-    public synchronized Player addPlayer(String username, int teamId) {
-        if (players.containsKey(username)) return null;
-
-        List<Player> team = playersByTeam.get(teamId);
-        if (team.size() >= numJogadoresEquipa) return null;
-
-        Player p = new Player(players.size(), username);
-        players.put(username, p);
-        team.add(p);
-        teamByPlayer.put(username, teamId);
-
-        return p;
+    public void registerAnswer(String username, int option) {
+        for (Team team : teams) {
+            for (Player p : team.getPlayers()) {
+                if (p.getName().equals(username)) {
+                    p.setChosenOption(option);
+                    team.playerAnswered();
+                    return;
+                }
+            }
+        }
     }
 
-    //GAME LOGIC --------------------------------------------------
+    public RoundResult endRound() {
+        Pergunta current = getCurrentQuestion();
+        if (current == null) return null;
 
-    public synchronized SendQuestion sendQuestionToAllPlayers() {
-        Pergunta atual = getPerguntaAtual();
-        if (atual == null) return null;
+        ArrayList<String> playerNames = new ArrayList<>();
+        ArrayList<Integer> playerScores = new ArrayList<>();
 
-        return new SendQuestion(
-                atual.getQuestao(),
-                atual.getOpcoes(),
-                indicePerguntaAtual,
-                timoutSeconds
-        );
+        for (Team team : teams) {
+            try {
+                team.awaitAll(); // espera que todos da equipa respondam ou timeout
+            } catch (InterruptedException ignored) {}
+            int teamScore = team.calculateQuestionScore(current);
+            for (Player p : team.getPlayers()) {
+                p.addScore(teamScore);
+                playerNames.add(p.getName());
+                playerScores.add(p.getScore());
+            }
+            team.resetChosenOptions();
+        }
+
+        currentQuestionIndex++;
+        boolean gameEnded = currentQuestionIndex >= questions.length;
+
+        // Constrói hashmap para SendRoundStats
+        java.util.HashMap<String, Integer> scores = new java.util.HashMap<>();
+        for (int i = 0; i < playerNames.size(); i++) {
+            scores.put(playerNames.get(i), playerScores.get(i));
+        }
+
+        return new RoundResult(true, gameEnded, scores, getCurrentQuestion());
     }
 
-    public synchronized void registerAnswer(String username, int option) {
-        if (respondedPlayers.contains(username)) return;
-
-        Player p = players.get(username);
-        if (p == null) return;
-
-        p.setOpcaoEscolhida(option);
-        respondedPlayers.add(username);
-        respostasRecebidas++;
+    public SendQuestion createSendQuestion(int timeoutSeconds) {
+        Pergunta current = getCurrentQuestion();
+        if (current == null) return null;
+        return new SendQuestion(current.getQuestion(), current.getOptions(), currentQuestionIndex, timeoutSeconds);
     }
 
-
-    public synchronized boolean roundEnded() {
-        return respostasRecebidas >= players.size()  ; // todo || roudTimeout
+    public SendFinalScores getFinalScores() {
+        java.util.HashMap<String, Integer> finalScores = new java.util.HashMap<>();
+        for (Team team : teams) {
+            for (Player p : team.getPlayers()) {
+                finalScores.put(p.getName(), p.getScore());
+            }
+        }
+        return new SendFinalScores(finalScores);
     }
-
-//    public synchronized RoundResult endRound() {
-//        Map<String, Integer> scores = new HashMap<>();
-//
-//        Pergunta atual = getPerguntaAtual();
-//        for (Player p : players.values()) {
-//            if (p.getOpcaoEscolhida() == atual.getRespostaCorreta()) {
-//                p.incrementarPontuacao();
-//            }
-//            scores.put(p.getName(), p.getPontuacao());
-//        }
-//
-//        indicePerguntaAtual++;
-//        respondedPlayers.clear();
-//        respostasRecebidas = 0;
-//
-//        boolean gameEnded = indicePerguntaAtual >= perguntas.length;
-//        Pergunta next = gameEnded ? null : getPerguntaAtual();
-//
-//        return new RoundResult(true, gameEnded, scores, next);
-//    }
 }

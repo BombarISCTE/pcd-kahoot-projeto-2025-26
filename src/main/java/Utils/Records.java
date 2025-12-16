@@ -4,7 +4,7 @@ import Game.Pergunta;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 
 
 public class Records {
@@ -29,7 +29,7 @@ public class Records {
         public int getGameId() { return gameId; }
     }
 
-    public record RoundResult(boolean roundEnded, boolean gameEnded, Map<String, Integer> playerScores, Pergunta nextQuestion) implements Serializable { }
+    public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores, Pergunta nextQuestion) implements Serializable { }
 
 
     public record SendQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable { }
@@ -37,7 +37,7 @@ public class Records {
     /**
      * @param playerScores username -> pontuação
      */
-    public record SendRoundStats(int gameId, Map<String, Integer> playerScores) implements Serializable {
+    public record SendRoundStats(int gameId, HashMap<String, Integer> playerScores) implements Serializable {
     }
 
     public static class GameEnded implements Serializable {
@@ -48,7 +48,7 @@ public class Records {
         public int getGameId() { return gameId; }
     }
 
-    public record SendFinalScores(Map<String, Integer> finalScores) implements Serializable { // username -> pontuação
+    public record SendFinalScores(HashMap<String, Integer> finalScores) implements Serializable { // username -> pontuação
     }
 
     public record refuseConnection(String reason) implements Serializable {

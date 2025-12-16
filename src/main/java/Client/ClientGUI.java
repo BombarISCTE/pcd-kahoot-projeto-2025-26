@@ -98,8 +98,8 @@ public class ClientGUI extends JFrame  {
             return;
         }
         Pergunta pergunta = perguntas[0];
-        perguntaEspaco.setText(pergunta.getQuestao());
-        String[] opcoes = pergunta.getOpcoes();
+        perguntaEspaco.setText(pergunta.getQuestion());
+        String[] opcoes = pergunta.getOptions();
         for(int i = 0; i < opcoesBotoes.length; i++){
             opcoesBotoes[i].setText(opcoes[i]);
         }

@@ -1,43 +1,50 @@
 package Game;
 
 public class Player {
-    private int id;
-    private String name;
-    // private boolean isHost;
+    private final int id;
+    private final String name;
     private int score;
-    //private int rank;
-    //private boolean isPlaying;
-    private int opcaoEscolhida = -1;
-    private boolean jogadorConectado = false;
+    private int chosenOption = -1;
+    private boolean connected;
 
     public Player(int id, String name) {
         this.id = id;
         this.name = name;
+        this.score = 0;
+        this.connected = true;
     }
 
-    @Override
-    public String toString() {
-        return "Player " + id + "- " + name;
+    public void addScore(int points) {
+        this.score += points;
     }
 
-    public void adicionarPontos(int pontosGanhos) {
-        this.score += pontosGanhos;
+    public void setChosenOption(int chosenOption) {
+        this.chosenOption = chosenOption;
     }
 
-    public void setOpcaoEscolhida(int opcaoEscolhida) {
-        this.opcaoEscolhida = opcaoEscolhida;
+    public int getChosenOption() {
+        return chosenOption;
     }
 
-    public int getOpcaoEscolhida() {
-        return opcaoEscolhida;
+    public void resetChosenOption() {
+        this.chosenOption = -1;
+    }
+
+    public void disconnect() {
+        this.connected = false;
+        resetChosenOption();
+    }
+
+    public void connect() {
+        this.connected = true;
+    }
+
+    public boolean isConnected() {
+        return connected;
     }
 
     public int getScore() {
         return score;
-    }
-
-    public void resetOpcaoEscolhida() {
-        this.opcaoEscolhida = -1;
     }
 
     public int getId() {
@@ -48,18 +55,7 @@ public class Player {
         return name;
     }
 
-    public void jogadorAtivo(String nomeJogador) {
-        this.name = nomeJogador;
-        this.jogadorConectado = true;
+    public String toString() {
+        return name + " (Score: " + score + ")";
     }
-
-    public boolean isJogadorConectado() {
-        return jogadorConectado;
-    }
-
-    public void desconectarJogador() {
-        this.jogadorConectado = false;
-        this.opcaoEscolhida = -1;
-    }
-
 }

@@ -2,6 +2,7 @@ package Server;
 
 import Game.GameState;
 import Game.Pergunta;
+import Utils.Records;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -23,9 +24,9 @@ public class TUI {
         this.server = server;
     }
 
-    public void menuConsola() throws IOException {
+    public void menu() throws IOException {
         System.out.println("-----------Server TUI-----------");
-        System.out.println("Options: newGame | listGames | deleteGame | checkGameStats | exit");
+        System.out.println("Options: newGame | listGames | deleteGame | startGame | checkGameStats | exit");
 
 //        // optional: preload questions for admin info (non-fatal)
 //        try {
@@ -109,7 +110,7 @@ public class TUI {
                 String path = "src/main/resources/Perguntas/" + fileName;
                 try {
                     Pergunta[] perguntas = Pergunta.lerPerguntas(path);
-                    game.setPerguntas(perguntas);
+                    game.setQuestions(perguntas);
                     System.out.println("Loaded " + perguntas.length + " questions from " + path);
                 } catch (Exception e) {
                     System.out.println("Could not load questions from Game/: " + e.getMessage());
@@ -127,19 +128,30 @@ public class TUI {
     private void handleStartGame() {
         try {
             System.out.print("Enter gameId to start: ");
-            String s = scanner.nextLine().trim();
-            int code = Integer.parseInt(s);
+            int code = Integer.parseInt(scanner.nextLine().trim());
             GameState game = server.getGame(code);
             if (game == null) {
                 System.out.println("No game with code " + code);
                 return;
             }
-            //game.startGame();
+
             System.out.println("Game " + code + " started.");
+
+            // envia primeira pergunta
+            Records.SendQuestion sendQuestion = game.createSendQuestion(30);
+            if (sendQuestion != null) {
+                for (ClientHandler ch : ClientHandler.clientHandlers) {
+                    if (ch.gameId == code) {
+                        ch.sendMessage(sendQuestion);
+                    }
+                }
+            }
+
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid game code.");
         }
     }
+
 
 
     private void handleDeleteGame() {
@@ -153,7 +165,7 @@ public class TUI {
         }
     }
 
-    private void handleCheckGameStats() { //todo
+    private void handleCheckGameStats() {
         try {
             System.out.print("Enter game code to inspect: ");
             String s = scanner.nextLine().trim();
@@ -163,9 +175,13 @@ public class TUI {
                 System.out.println("No game with code " + code);
                 return;
             }
-            //game.printGameStats(); todo
+            Records.SendFinalScores finalScores = game.getFinalScores();
+            System.out.println("Final Scores for Game " + code + ":");
+            finalScores.finalScores().forEach((player, score) ->
+                    System.out.println(player + ": " + score + " points"));
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid game code.");
         }
     }
+
 }

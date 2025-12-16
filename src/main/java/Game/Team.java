@@ -1,28 +1,81 @@
 package Game;
 
+import Utils.*;
+import Utils.Records.*;
+
+import java.util.ArrayList;
+
 public class Team {
+    private final int id;
+    private final String name;
+    private final ArrayList<Player> players = new ArrayList<>();
+    private ModifiedBarrier barrier;
 
-    private int totalPoints;
-    private String teamName;
-    private int teamCode;
-
-    public Team (String teamName, int teamCode) {
-        this.teamName = teamName;
-        this.teamCode = teamCode;
-        this.totalPoints = 0;
+    public Team(String name, int id) {
+        this.name = name;
+        this.id = id;
     }
 
-    public Team (int teamCode) {
-        this.teamCode = teamCode;
+    public void addPlayer(Player p) {
+        players.add(p);
     }
 
-    public int getTotalPoints() {
-        return totalPoints;
+    public ArrayList<Player> getPlayers() {
+        return players;
     }
-    public void addPoints(int points) {
-        this.totalPoints += points;
+
+    public int getId() {
+        return id;
     }
-    public int getTeamCode() {
-        return teamCode;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setupBarrier(int timeoutSeconds, Runnable action) {
+        barrier = new ModifiedBarrier(players.size(), action);
+        // Timer para expirar o tempo da equipa
+        new Thread(() -> {
+            try {
+                Thread.sleep(timeoutSeconds * 1000);
+                barrier.tempoExpirado();
+            } catch (InterruptedException ignored) {}
+        }).start();
+    }
+
+    public void playerAnswered() {
+        if (barrier != null) {
+            barrier.chegouJogador();
+        }
+    }
+
+    public void awaitAll() throws InterruptedException {
+        if (barrier != null) {
+            barrier.await();
+        }
+    }
+
+    public int calculateQuestionScore(Pergunta question) {
+        int maxScore = 0;
+        boolean allCorrect = true;
+        for (Player p : players) {
+            if (question.verificarResposta(p.getChosenOption())) {
+                maxScore = Math.max(maxScore, question.getPoints());
+            } else {
+                allCorrect = false;
+            }
+        }
+        // Se todos acertaram, pontuação duplicada
+        return allCorrect ? question.getPoints() * 2 : maxScore;
+    }
+
+    public void resetChosenOptions() {
+        for (Player p : players) {
+            p.resetChosenOption();
+        }
+    }
+
+    public int size() {
+        return players.size();
     }
 }
