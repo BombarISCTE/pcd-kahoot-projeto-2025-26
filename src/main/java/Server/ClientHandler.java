@@ -221,10 +221,29 @@ public class ClientHandler extends Thread {
 
     public void closeEverything() {
         try {
-            synchronized (clientHandlers) { clientHandlers.remove(this); }
+            // Remove o jogador da equipa
+            if (clientConnected != null && gameState != null) {
+                Team team = gameState.getTeam(clientConnected.teamId());
+                if (team != null) {
+                    team.getPlayers().removeIf(p -> p.getName().equals(clientConnected.username()));
+                }
+                //envia a lista atualizada de jogadores conectados
+                ArrayList<String> connectedPlayers = new ArrayList<>();
+                for (Team t : gameState.getTeams()) {
+                    for (Player p : t.getPlayers()) {
+                        connectedPlayers.add(p.getName());
+                    }
+                }
+                broadcastMessage(new ClientConnectAck("Server", gameId, connectedPlayers), gameId);
+            }
+
+            synchronized (clientHandlers) {
+                clientHandlers.remove(this);
+            }
             if (objectInputStream != null) objectInputStream.close();
             if (objectOutputStream != null) objectOutputStream.close();
             if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException ignored) {}
     }
+
 }

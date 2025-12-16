@@ -33,8 +33,8 @@ public class Client implements Runnable, Serializable {
     public void run() {
         try {
             connectToServer();
-            listenForMessages();
             gui = new ClientGUI(this);
+            listenForMessages();
         } catch (Exception e) {
             System.err.println("Cliente encerrou: " + e.getMessage());
         } finally {
