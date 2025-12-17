@@ -25,6 +25,8 @@ public class Server {
 
     }
 
+    public void decrementGameIdCounter() {gameIdCounter.decrementAndGet();}
+
     public void startServer() {
         startTUI();
 
@@ -138,6 +140,25 @@ public class Server {
 
         game.setActive(true);
 
+        // Register a round-timeout callback so the server will end the round if time expires
+        game.setRoundTimeoutCallback(() -> {
+            System.out.println("Server: round timeout callback triggered for game " + gameId);
+            RoundResult result = game.tryEndRoundIfComplete();
+            if (result != null) {
+                broadcastToGame(result, gameId);
+                if (!result.gameEnded()) {
+                    // initialize and send next question
+                    game.startCurrentQuestion();
+                    Object nextMsg = null;
+                    if (game.getCurrentQuestion() instanceof IndividualQuestion) nextMsg = game.createSendIndividualQuestion();
+                    else if (game.getCurrentQuestion() instanceof TeamQuestion) nextMsg = game.createSendTeamQuestion();
+                    if (nextMsg != null) broadcastToGame(nextMsg, gameId);
+                } else {
+                    broadcastToGame(game.getFinalScores(), gameId);
+                }
+            }
+        });
+
         System.out.println("[Server] Game " + gameId + " successfully initialized and ready to start.");
 
         // Broadcast GameStartedWithPlayers using PlayerInfo
@@ -182,6 +203,15 @@ public class Server {
         GameState game = getGame(gameId);
         if (game == null) return;
         game.startCurrentQuestion(); // inicializa temporizador/latch/barrier da pergunta atual
+    }
+
+    // Broadcast a serializable object to all clients in a game
+    public void broadcastToGame(Object message, int gameId) {
+        synchronized (ClientHandler.clientHandlers) {
+            for (ClientHandler ch : ClientHandler.clientHandlers) {
+                if (ch.handlerRunning && ch.getGameId() == gameId) ch.sendMessage(message);
+            }
+        }
     }
 
     // Fecha o servidor

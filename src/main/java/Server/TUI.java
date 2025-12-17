@@ -99,6 +99,7 @@ public class TUI {
             System.out.println("Game created with code: " + gameId);
 
         } catch (Exception e) {
+            server.decrementGameIdCounter();
             System.out.println("Failed to create game: " + e.getMessage());
         }
     }
