@@ -42,7 +42,7 @@ public class DealWithIndividualAnswers {
         if(respostaCorreta) {
             pontosGanhos = pontosPergunta * fator;
             jogador.adicionarPontos(pontosGanhos);
-            gameStatistics.atualizaPontosJogadores(jogador.getId(), pontosGanhos);
+//            gameStatistics.atualizaPontosJogadores(jogador.getId(), pontosGanhos); //del
         }
 
         return pontosGanhos;

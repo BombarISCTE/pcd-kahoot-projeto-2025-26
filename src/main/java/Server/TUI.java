@@ -112,7 +112,7 @@ public class TUI {
                 String path = "src/main/resources/Perguntas/" + fileName;
                 try {
                     perguntas = Pergunta.lerPerguntas(path);
-                    game.setPerguntas(perguntas);
+//                    game.setPerguntas(perguntas);
                     System.out.println("Loaded " + perguntas.length + " questions from " + path);
                 } catch (Exception e) {
                     System.out.println("Could not load questions from Game/: " + e.getMessage());

@@ -10,12 +10,13 @@ public class DealWithTeamAnswers {
     private final ModifiedBarrier barrier;
     private Timer timer;
     private final int equipaId;
-    private final GameStatistics gameStatistics;
+    private int pontosGanhos; //add
+//    private final GameStatistics gameStatistics; //del
 
-    public DealWithTeamAnswers(GameState gameState, int equipaId, GameStatistics gameStatistics) {
+    public DealWithTeamAnswers(GameState gameState, int equipaId /*, GameStatistics gameStatistics*/) {
         this.gameState = gameState;
         this.equipaId = equipaId;
-        this.gameStatistics = gameStatistics;
+//        this.gameStatistics = gameStatistics; //del
 
 
         int totalJogadoresEquipa = gameState.getNumJogadoresEquipa();
@@ -28,6 +29,7 @@ public class DealWithTeamAnswers {
 
     public void iniciarPerguntaEquipa(){
         barrier.reset();
+        pontosGanhos = 0; //add
         gameState.reporRespostasEquipa();
         gameState.reporOpcoesEscolhidas();
         int tempo = Constants.TIMOUT_SECS;
@@ -66,7 +68,7 @@ public class DealWithTeamAnswers {
                 numRespostasCorretas++;
             }
         }
-        int pontosGanhos;
+//        int pontosGanhos; //del
         if(numRespostasCorretas == jogadores.length){
             pontosGanhos = pontosPergunta * 2;
         }else if(numRespostasCorretas > 0){
@@ -77,7 +79,7 @@ public class DealWithTeamAnswers {
 
         for(Player jogador : jogadores){
             jogador.adicionarPontos(pontosGanhos);
-            gameStatistics.atualizaPontosJogadores(jogador.getId(), pontosGanhos);
+//            gameStatistics.atualizaPontosJogadores(jogador.getId(), pontosGanhos);
         }
 
         equipas[equipaId - 1].addPoints(pontosGanhos);
@@ -86,5 +88,11 @@ public class DealWithTeamAnswers {
     }
 
 
+    public int getPontosEquipa() {
+        return pontosGanhos;
+    }
 
+    public Player[] getJogadoresEquipa() {
+        return gameState.getJogadoresDaEquipa(equipaId);
+    }
 }

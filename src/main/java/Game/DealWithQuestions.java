@@ -26,12 +26,13 @@ public class DealWithQuestions {
         gameState.setPerguntas(perguntas);
     }
 
-    public boolean avancarProximaPergunta(){
-        gameState.avancarParaProximaPergunta();
-
-        if(gameState.acabouJogo()){
-            return false;
-        }
-        return true;
-    }
+//del
+//    public boolean avancarProximaPergunta(){
+//        gameState.avancarParaProximaPergunta();
+//
+//        if(gameState.acabouJogo()){
+//            return false;
+//        }
+//        return true;
+//    }
 }
