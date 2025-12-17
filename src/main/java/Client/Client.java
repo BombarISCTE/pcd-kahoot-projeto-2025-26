@@ -1,12 +1,10 @@
 package Client;
 
+import Utils.Constants;
 import Utils.Records.*;
-import Utils.Records.SendAnswer;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Client {
 
@@ -27,6 +25,7 @@ public class Client {
         this.username = username;
         this.teamId = teamId;
         this.gameId = gameId;
+        System.out.println(username +  " esolheu a equipa " + teamId + " para o jogo " + gameId);
     }
 
     public String getUsername() {
@@ -41,13 +40,13 @@ public class Client {
 
         gui = new ClientGUI(this);
 
-        new Thread(this::listenLoop).start();
+        new Thread(()-> messageHandler()).start();
 
         // Envia handshake inicial para conectar ao servidor
-        sendMessage(new ClientConnect(username, -1, 0)); // gameId e teamId serão atualizados pelo servidor
+        sendMessage(new ClientConnect(username, gameId, teamId)); // gameId e teamId serão atualizados pelo servidor
     }
 
-    private void listenLoop() {
+    private void messageHandler() {
         try {
             while (true) {
                 Object obj = inputStream.readObject();
@@ -56,7 +55,12 @@ public class Client {
                 switch (obj.getClass().getSimpleName()) {
                     case "ClientConnectAck" -> {
                         ClientConnectAck ack = (ClientConnectAck) obj;
-                        gui.setConnectedPlayers(ack.connectedPlayers());
+                        ///gui.setConnectedPlayers(ack.connectedPlayers());
+                    }
+                    case "GameStarted" -> {
+                        GameStarted gs = (GameStarted) obj;
+                        gui = new ClientGUI(this);
+                        gui.setConnectedPlayers(gs.connectedPlayers());
                     }
                     case "SendIndividualQuestion" -> {
                         gui.mostrarNovaPergunta((SendIndividualQuestion) obj);
@@ -111,10 +115,10 @@ public class Client {
 
     public static void main(String[] args) {
         String serverIP = "localhost";
-        int serverPort = 8008;
+        int serverPort = Constants.SERVER_PORT;
         String username = "Player1";
         int teamId = 2;
-        int gameId = 1000000;
+        int gameId = 1;
         Client client = new Client(serverIP, serverPort, username, teamId, gameId);
         try {
             client.start();

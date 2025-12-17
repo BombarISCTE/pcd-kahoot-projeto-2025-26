@@ -40,12 +40,12 @@ public class TUI {
 
             try {
                 switch (cmd) {
-                    case "newgame", "new" -> handleNewGame();
+                    case "newgame", "new", "n" -> handleNewGame();
                     case "listgames", "list", "ls" -> server.listGames();
                     case "deletegame", "delete", "remove" -> handleDeleteGame();
-                    case "start", "startgame" -> handleStartGame();
+                    case "start", "startgame", "s" -> handleStartGame();
                     case "checkgamestats", "check" -> handleCheckGameStats();
-                    case "exit", "quit" -> {
+                    case "exit", "quit", "q" -> {
                         System.out.println("Exiting TUI (server keeps running).");
                         return;
                     }
@@ -84,13 +84,17 @@ public class TUI {
                 String path = "src/main/resources/Perguntas/" + fileName;
                 String jsonPath = Utils.FormatQuestions.convertTxtToJsonPath(path);
                 Question[] perguntas = Utils.FormatQuestions.readQuestions(jsonPath);
+
                 System.out.println(perguntas.length + " questions were loaded from: " + jsonPath);
                 System.out.println("First question: " + perguntas[0].getQuestionText());
                 System.out.println("Last question: " + perguntas[perguntas.length - 1].getQuestionText());
+
+                // Apenas guardar as perguntas no GameState, sem inicializar barreiras/latches
                 game.setQuestions(perguntas);
                 System.out.println("Loaded " + perguntas.length + " questions.");
             }
 
+            // Adiciona o jogo ao servidor
             server.addGame(game);
             System.out.println("Game created with code: " + gameId);
 
@@ -98,6 +102,7 @@ public class TUI {
             System.out.println("Failed to create game: " + e.getMessage());
         }
     }
+
 
     private void handleStartGame() {
         try {
@@ -110,13 +115,20 @@ public class TUI {
                 return;
             }
 
+            // Chamada que valida equipas/jogadores e inicializa barreiras/latches
             server.startGame(gameId);
+
             System.out.println("Game " + gameId + " started.");
+            // Aqui podes chamar startCurrentQuestion para enviar GUI/primeira questão
+            game.startCurrentQuestion();
 
         } catch (NumberFormatException e) {
             System.out.println("Invalid gameId.");
+        } catch (IllegalStateException e) {
+            System.out.println("Cannot start game: " + e.getMessage());
         }
     }
+
 
     private void handleDeleteGame() {
         try {

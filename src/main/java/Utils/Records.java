@@ -1,5 +1,6 @@
 package Utils;
 
+import Game.Player;
 import Game.Question;
 
 import java.io.Serializable;
@@ -36,8 +37,10 @@ public class Records {
 //        public int getGameId() { return gameId; }
 //    }
 
-    public record GameStarted(int gameId) implements Serializable {}
+    public record GameStarted(int gameId, ArrayList<Player> connectedPlayers) implements Serializable {}
     public record GameEnded(int gameId) implements Serializable {}
+
+    public record NewPlayerConnected(String username, int teamId) implements Serializable {}
 
 
     public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores,

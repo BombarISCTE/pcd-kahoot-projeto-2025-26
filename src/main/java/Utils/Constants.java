@@ -20,7 +20,7 @@ public class Constants {
 
     public static final int QUESTION_TIME_LIMIT = 15; // seconds
 
-    public static final int GAMEID_GENERATOR = 1000000;
+    // public static final int GAMEID_GENERATOR = 1000000;
 
 
 }

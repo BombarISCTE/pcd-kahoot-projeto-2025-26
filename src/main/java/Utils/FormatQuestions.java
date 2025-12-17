@@ -5,6 +5,7 @@ import Game.Question;
 import Game.TeamQuestion;
 import com.google.gson.*;
 import java.io.*;
+import java.util.ArrayList;
 
 public class FormatQuestions {
 
@@ -74,9 +75,9 @@ public class FormatQuestions {
 
                 // Alterna tipo
                 if (i % 2 == 0) {
-                    questions[i] = new IndividualQuestion(question, correct, points, options, 0); // totalPlayers será configurado depois
+                    questions[i] = new IndividualQuestion(question, correct, points, options); // totalPlayers será configurado depois
                 } else {
-                    questions[i] = new TeamQuestion(question, correct, points, options, null); // lista de equipas será passada no GameState
+                    questions[i] = new TeamQuestion(question, correct, points, options);
                 }
             }
 

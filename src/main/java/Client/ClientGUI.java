@@ -1,5 +1,6 @@
 package Client;
 
+import Game.Player;
 import Utils.Records.*;
 
 import javax.swing.*;
@@ -79,13 +80,13 @@ public class ClientGUI extends JFrame {
     }
 
     // Atualiza lista de jogadores e cria labels
-    public void setConnectedPlayers(ArrayList<String> players) {
+    public void setConnectedPlayers(ArrayList<Player> players) {
         JPanel placarPontos = new JPanel(new GridLayout(players.size(), 1, 5, 5));
         placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
 
         playerScoreLabels = new JLabel[players.size()];
         for (int i = 0; i < players.size(); i++) {
-            playerScoreLabels[i] = new JLabel(players.get(i) + ": 0 pontos");
+            playerScoreLabels[i] = new JLabel(players.get(i).getName() + "T" + players.get(i).getTeamId()+ ": " + players.get(i).getScore());
             placarPontos.add(playerScoreLabels[i]);
         }
 

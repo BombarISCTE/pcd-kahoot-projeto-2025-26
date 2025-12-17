@@ -10,12 +10,11 @@ public class IndividualQuestion extends Question {
 
     // Lista de jogadores que responderam a esta pergunta
     private final ArrayList<Player> answeredPlayers = new ArrayList<>();
-    private final int totalPlayers;
+    private int totalPlayers=-1;
     private ModifiedCountdownLatch countdownLatch;
 
-    public IndividualQuestion(String questionText, int correct, int points, String[] options, int totalPlayers) {
+    public IndividualQuestion(String questionText, int correct, int points, String[] options) {
         super(questionText, correct, points, options);
-        this.totalPlayers = totalPlayers;
     }
 
     // Regista a resposta de um jogador e retorna a pontuação imediata (com bónus se for um dos 2 primeiros)
@@ -25,7 +24,7 @@ public class IndividualQuestion extends Question {
     }
 
 
-        // No fim da ronda, somar a pontuação total da equipa a todos os jogadores da equipa
+    // No fim da ronda, somar a pontuação total da equipa a todos os jogadores da equipa
     public synchronized void processResponses(Team team) {
         ArrayList<Player> players = new ArrayList<>(team.getPlayers());
         int totalScore = 0;
@@ -43,6 +42,15 @@ public class IndividualQuestion extends Question {
 
     public StringBuilder formatedClassName(){return new StringBuilder("Pergunta Individual: ");}
 
+    public int getTotalPlayers() {return totalPlayers;}
+
+    public void setTotalPlayers(int totalPlayers) {
+        if (totalPlayers < 1) {
+            throw new IllegalArgumentException("O número total de jogadores deve ser pelo menos 1.");
+        }
+        this.totalPlayers = totalPlayers;
+    }
+
 
 
 
@@ -53,4 +61,19 @@ public class IndividualQuestion extends Question {
     public void setCountdownLatch(ModifiedCountdownLatch latch) {
         this.countdownLatch = latch;
     }
+
+    public synchronized void initializeLatch() {
+        if (totalPlayers <= 0)
+            throw new IllegalStateException("Total players not set");
+
+        this.countdownLatch = new ModifiedCountdownLatch(
+                Constants.BONUS_FACTOR,
+                2,
+                Constants.QUESTION_TIME_LIMIT,
+                totalPlayers
+        );
+    }
+
+    public ModifiedCountdownLatch getCountdownLatch() {return countdownLatch;}
+
 }

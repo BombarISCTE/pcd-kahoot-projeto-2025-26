@@ -1,18 +1,18 @@
 package Server;
 
-import Game.GameState;
+import Game.*;
 import Utils.Constants;
 import Utils.Records.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Server {
 
-    private static final int PORT = Constants.SERVER_PORT;
     private ServerSocket serverSocket;
     private final Map<Integer, GameState> games = new HashMap<>();
     private boolean isRunning = true;
@@ -21,7 +21,8 @@ public class Server {
     private final AtomicInteger playerIdCounter = new AtomicInteger(1);
 
     public Server() throws IOException {
-        serverSocket = new ServerSocket(PORT);
+        serverSocket = new ServerSocket(Constants.SERVER_PORT);
+
     }
 
     public void startServer() {
@@ -36,6 +37,9 @@ public class Server {
             }
         } catch (IOException e) {
             System.err.println("Server: error accepting client - " + e.getMessage());
+            closeServerSocket();
+        } catch (Exception e) {
+            System.err.println("Server: unexpected error - " + e.getMessage());
             closeServerSocket();
         }
     }
@@ -61,6 +65,14 @@ public class Server {
 
     public GameState getGame(int gameId) { return games.get(gameId); }
 
+    public void addTeam(int gameId, int teamId) {
+        GameState game = games.get(gameId);
+        if(game == null) {
+            throw new IllegalArgumentException("No game with code " + gameId);
+        }
+        game.addTeam(teamId);
+    }
+
     public void listGames() {
         if (games.isEmpty()) {
             System.out.println("No active games.");
@@ -72,7 +84,6 @@ public class Server {
         }
     }
 
-    // Cria novo ID de equipe baseado no número atual de equipes do jogo
     public synchronized int createTeamId(int gameId) {
         GameState game = games.get(gameId);
         if (game != null) return game.getTeams().size() + 1;
@@ -83,24 +94,53 @@ public class Server {
     public void startGame(int gameId) {
         GameState game = getGame(gameId);
         if (game == null) {
-            System.out.println("Server startGame - No game with id: " + gameId);
-            return;
+            throw new IllegalArgumentException("No game with code " + gameId);
         }
 
-        System.out.println("Server startGame - Starting game " + gameId);
+        // --- 1. Validar equipas e jogadores ---
+        ArrayList<Team> teams = game.getTeams();
+        if (teams.isEmpty()) {
+            throw new IllegalStateException("Cannot start game: no teams added");
+        }
 
-        // Envia mensagem GameStarted a todos os clientes do jogo
-        for (ClientHandler ch : ClientHandler.clientHandlers) {
-            if (ch.getGameId() == gameId) {
-                ch.sendMessage(new GameStarted(gameId));
+        int totalPlayers = 0;
+        for (Team team : teams) {
+            int size = team.getCurrentSize();
+            if (size <= 0) {
+                throw new IllegalStateException("Team " + team.getTeamId() + " has no players");
+            }
+            totalPlayers += size;
+        }
+
+        if (totalPlayers <= 0) {
+            throw new IllegalStateException("Cannot start game: total players must be at least 1");
+        }
+
+        // --- 2. Inicializar perguntas de equipa e individual ---
+        Question[] questions = game.getQuestions();
+        if (questions == null || questions.length == 0) {
+            throw new IllegalStateException("Cannot start game: no questions loaded");
+        }
+
+        for (Question q : questions) {
+            if (q instanceof TeamQuestion tq) {
+                for (Team team : teams) {
+                    tq.addTeam(team);
+                }
+                tq.initializeBarrier(); // barrier conhece agora todos os jogadores
+            }
+
+            if (q instanceof IndividualQuestion iq) {
+                iq.setTotalPlayers(totalPlayers);
+                iq.initializeLatch();   // latch conhece agora todos os jogadores
             }
         }
 
-        // Envia a primeira pergunta
-        for (ClientHandler ch : ClientHandler.clientHandlers) {
-            if (ch.getGameId() == gameId) ch.sendNextQuestion();
-        }
+        game.setActive(true);
+
+        System.out.println("[Server] Game " + gameId + " successfully initialized and ready to start.");
     }
+
 
     // Avança para a próxima pergunta
     public void nextQuestion(int gameId) {
