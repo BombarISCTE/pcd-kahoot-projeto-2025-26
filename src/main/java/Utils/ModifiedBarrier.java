@@ -1,60 +1,75 @@
 package Utils;
 
-import Game.DealWithTeamAnswers;
-
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+/*
+Class: ModifiedBarrier
+
+Public constructors:
+ - ModifiedBarrier(int totalPlayers, Runnable barrierAction)
+
+Public methods:
+ - void chegouJogador()
+ - void tempoExpirado()
+ - void await() throws InterruptedException
+ - void reset()
+ - boolean isComplete()
+
+Notes:
+ - Simple barrier with timeout support and a single barrier action.
+*/
 
 public class ModifiedBarrier {
 
     private final Lock lock = new ReentrantLock();
     private final Condition todosChegaram = lock.newCondition();
 
-    private final int totalJogadores;
+    private final int totalPlayers;
     private final Runnable barrierAction;
-    private int jogadoresQueChegaram = 0;
+    private final AtomicInteger arrivedPlayers = new AtomicInteger(0);
     private boolean tempoExpirado = false;
     private boolean acaoExecutada = false;
 
-    public ModifiedBarrier(int totalJogadores, Runnable barrierAction) {
-        this.totalJogadores = totalJogadores;
+    public ModifiedBarrier(int totalPlayers, Runnable barrierAction) {
+        this.totalPlayers = totalPlayers;
         this.barrierAction = barrierAction;
     }
 
-    public void chegouJogador(){
+    public void chegouJogador() {
         lock.lock();
-        try{
-            jogadoresQueChegaram++;
-            if(jogadoresQueChegaram == totalJogadores && !acaoExecutada){
+        try {
+            arrivedPlayers.incrementAndGet();
+            if (arrivedPlayers.get() >= totalPlayers && !acaoExecutada) {
                 acaoExecutada = true;
                 barrierAction.run();
                 todosChegaram.signalAll();
             }
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
 
-    public void tempoExpirado(){
+    public void tempoExpirado() {
         lock.lock();
-        try{
+        try {
             tempoExpirado = true;
-            if(!acaoExecutada){
+            if (!acaoExecutada) {
                 acaoExecutada = true;
                 barrierAction.run();
             }
             todosChegaram.signalAll();
-
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
 
     public void await() throws InterruptedException {
         lock.lock();
-        try{
-            while(jogadoresQueChegaram < totalJogadores && !tempoExpirado){
+        try {
+            while (arrivedPlayers.get() < totalPlayers && !tempoExpirado) {
                 todosChegaram.await();
             }
         } finally {
@@ -62,12 +77,21 @@ public class ModifiedBarrier {
         }
     }
 
-    public void reset(){
+    public void reset() {
         lock.lock();
-        try{
-            jogadoresQueChegaram = 0;
+        try {
+            arrivedPlayers.set(0);
             tempoExpirado = false;
             acaoExecutada = false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public boolean isComplete() {
+        lock.lock();
+        try {
+            return tempoExpirado || acaoExecutada;
         } finally {
             lock.unlock();
         }

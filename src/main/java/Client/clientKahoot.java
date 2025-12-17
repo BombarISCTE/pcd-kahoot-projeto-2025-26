@@ -1,9 +1,16 @@
 package Client;
 
-import Game.Pergunta;
-import Game.Team;
+import Game.Question;
 
-import java.net.Socket;
+/*
+Class: clientKahoot (demo / runner)
+
+Public methods:
+ - static void main(String[] args)
+
+Notes:
+ - Example runner that constructed a Client and ClientGUI for local testing.
+*/
 
 public class clientKahoot {
 
@@ -24,9 +31,9 @@ public class clientKahoot {
 //        //client.runClient();
 
         try{
-            Pergunta[] perguntas = Pergunta.lerPerguntas("src/main/resources/Perguntas/FicheiroQuestoes.json");
-            Client client = new Client( "localhost", 12345, 123, 1, "Player1");
-            ClientGUI gui = new ClientGUI(client, perguntas);
+            Question[] perguntas = Utils.FormatQuestions.readQuestions("src/main/resources/Perguntas/FicheiroQuestoes.json");
+            Client client = new Client( "localhost", 8008,  "Player1", 2, 2);
+            ClientGUI gui = new ClientGUI(client);//todo passar as perguntas sem respostas pelo server
         } catch(Exception e) {
             e.printStackTrace();
         }

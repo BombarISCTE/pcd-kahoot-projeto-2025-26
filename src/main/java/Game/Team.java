@@ -1,28 +1,98 @@
 package Game;
 
+import java.util.ArrayList;
+
+/*
+Class: Team
+
+Public constructors:
+ - Team(int teamId, int maxPlayersPerTeam)
+
+Public / synchronized methods (signatures):
+ - void addPlayer(Player player)
+ - void removePlayer(String name)
+ - ArrayList<Player> getPlayers()
+ - int getTotalScore()
+ - boolean isFull()
+ - int getCurrentSize()
+ - int getTeamId()
+ - String toString()
+ - Player getPlayer(String username)
+*/
+
 public class Team {
 
-    private int totalPoints;
-    private String teamName;
-    private int teamCode;
+    private final int teamId;
+    private final int maxPlayersPerTeam;
+    private final ArrayList<Player> players;
 
-    public Team (String teamName, int teamCode) {
-        this.teamName = teamName;
-        this.teamCode = teamCode;
-        this.totalPoints = 0;
+    public Team(int teamId, int maxPlayersPerTeam) {
+        if (maxPlayersPerTeam < 1) {
+            throw new IllegalArgumentException("Uma equipa deve ter pelo menos 1 jogador.");
+        }
+        this.teamId = teamId;
+        this.maxPlayersPerTeam = maxPlayersPerTeam;
+        this.players = new ArrayList<>();
     }
 
-    public Team (int teamCode) {
-        this.teamCode = teamCode;
+    public synchronized void addPlayer(Player player) {
+        if (players.size() >= maxPlayersPerTeam) {
+            System.out.println("Não é possível adicionar mais jogadores, equipa cheia.");
+            return;
+        }
+        players.add(player);
     }
 
-    public int getTotalPoints() {
-        return totalPoints;
+    // Remove um jogador da equipa pelo username
+    public synchronized void removePlayer(String name) {
+        for (int i = 0; i < players.size(); i++) {
+            if (players.get(i).getName().equals(name)) {
+                players.remove(i);
+                return;
+            }
+        }
     }
-    public void addPoints(int points) {
-        this.totalPoints += points;
+
+    public synchronized ArrayList<Player> getPlayers() {return new ArrayList<>(players);}
+
+    // Retorna pontuação total da equipa
+    public synchronized int getTotalScore() {
+        int total = 0;
+        for (int i = 0; i < players.size(); i++) {
+            total += players.get(i).getScore();
+        }
+        return total;
     }
-    public int getTeamCode() {
-        return teamCode;
+
+    // Verifica se a equipa está completa
+    public synchronized boolean isFull() {return players.size() == maxPlayersPerTeam;}
+
+    // Número atual de jogadores
+    public synchronized int getCurrentSize() {return players.size();}
+
+
+
+    public int getTeamId() {return teamId;}
+
+    @Override
+    public synchronized String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Players (").append(players.size()).append("/").append(maxPlayersPerTeam).append("):\n");
+        for (int i = 0; i < players.size(); i++) {
+            sb.append(" - ").append(players.get(i)).append("\n");
+        }
+        sb.append("Total Score: ").append(getTotalScore());
+        return sb.toString();
     }
+
+    public Player getPlayer(String username) {
+        for (Player p : players) {
+            if (p.getName().equals(username)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+
 }

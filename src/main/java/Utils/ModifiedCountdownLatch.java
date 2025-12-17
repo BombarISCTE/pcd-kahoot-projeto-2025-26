@@ -1,5 +1,24 @@
 package Utils;
 
+/*
+Class: ModifiedCountdownLatch
+
+Public constructors:
+ - ModifiedCountdownLatch(int bonusFactor, int bonusCount, int waitPeriod, int count)
+
+Public methods:
+ - synchronized void await() throws InterruptedException
+ - synchronized int countDown()
+ - synchronized void tempoExpirado()
+ - synchronized int getCount()
+ - int getWaitPeriod()
+ - synchronized void reset(int newCount)
+ - boolean isComplete()
+
+Notes:
+ - A customized latch that supports a limited number of bonus factors and a timeout.
+*/
+
 public class ModifiedCountdownLatch {
     private int count;
     private final int bonusFactor;
@@ -72,4 +91,7 @@ public class ModifiedCountdownLatch {
         this.bonusUsados = 0;
     }
 
+    public boolean isComplete() {
+        return count <= 0 || tempoExpirado;
+    }
 }

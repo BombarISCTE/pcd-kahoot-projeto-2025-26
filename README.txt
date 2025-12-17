@@ -23,7 +23,23 @@ Quando não houver mais perguntas
 Servidor envia GameEnded (broadhcast)
 Servidor envia pontuações finais (broadhcast)
 SendFinalScores (broadhcast)
+________________________________________________________________________________
+Server
+ ├── aceita sockets
+ ├── cria ClientHandlers
+ └── guarda Map<gameId, GameState>
 
+GameState
+ ├── lógica do jogo
+ ├── timers
+ ├── pontuações
+ ├── decide eventos
+ └── pede envios
+
+ClientHandler
+ ├── socket
+ ├── ObjectOutputStream
+ └── envia mensagens
 
 _____________________________________________________________________
 

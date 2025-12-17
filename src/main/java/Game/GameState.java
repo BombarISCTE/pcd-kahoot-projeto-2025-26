@@ -1,193 +1,339 @@
 package Game;
 
+import Utils.Constants;
+import Utils.ModifiedBarrier;
+import Utils.ModifiedCountdownLatch;
+import Utils.Records.RoundResult;
+import Utils.Records.SendFinalScores;
+import Utils.Records.SendIndividualQuestion;
+import Utils.Records.SendTeamQuestion;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/*
+Class: GameState
+
+Public constructors:
+ - GameState(int numTeams, int playersPerTeam, int gameCode)
+
+Public / synchronized methods (signatures):
+ - void addTeam(int teamId)
+ - Team getTeam(int teamId)
+ - ArrayList<Team> getTeams()
+ - int getGameCode()
+ - ArrayList<Player> getAllPlayers()
+ - void setQuestions(Question[] questions)
+ - Question[] getQuestions()
+ - void startGame()                          // initialize barriers/latches for all questions
+ - Question getCurrentQuestion()
+ - int getCurrentQuestionIndex()
+ - void startCurrentQuestion()              // starts timer/latch/barrier for current question
+ - void setRoundTimeoutCallback(Runnable callback)
+ - void registerAnswer(String username, int option)
+ - RoundResult endRound()
+ - RoundResult tryEndRoundIfComplete()
+ - String assignNextPlayerName()
+ - HashMap<String,Integer> getCurrentScores()
+ - boolean isCurrentQuestionComplete()
+ - boolean isActive()
+ - void setActive(boolean active)
+ - SendIndividualQuestion createSendIndividualQuestion()
+ - SendTeamQuestion createSendTeamQuestion()
+ - SendFinalScores getFinalScores()
+
+Notes:
+ - This class manages the per-game state, teams and questions.
+ - It exposes synchronization points for starting questions and ending rounds.
+*/
+
 public class GameState {
 
-    //private final String gameCode;
     private final int gameCode;
+    private final int numTeams;
+    private final int playersPerTeam;
+    private final HashMap<Integer, Team> teamsMap;
 
-    private final int numEquipas;
-    private int numJogadoresEquipa;
-    private int numPerguntas;
+    private Question[] questions;
+    private int currentQuestionIndex = 0;
+    private boolean isActive = false;
 
-    private Team[] equipas;
-    private Player[][] jogadores;
+    private final AtomicInteger responseCounter = new AtomicInteger(0);
+    private final AtomicInteger playerCounter = new AtomicInteger(1);
+    private ModifiedCountdownLatch countdownLatch;
+    private Timer questionTimer;
+    private Runnable roundTimeoutCallback = null;
 
-    private Pergunta[] perguntas;
-    private int indicePerguntaAtual = 0;
-
-    private int respostasRecebidas = 0;
-    private int respostasEquipa[];
-
-    private int ordemRespostas = 0;
-
-    public GameState(int numEquipas, int numJogadoresEquipa, int numPerguntas, int gameCode) {
-        this.numEquipas = numEquipas;
-        this.numJogadoresEquipa = numJogadoresEquipa;
-        this.numPerguntas = numPerguntas;
-
-        //gameCode = IdCodeGenerator.gerarCodigo();
+    public GameState(int numTeams, int playersPerTeam, int gameCode) {
+        this.numTeams = numTeams;
+        this.playersPerTeam = playersPerTeam;
         this.gameCode = gameCode;
+        this.teamsMap = new HashMap<>();
+    }
 
-        this.equipas = new Team[numEquipas];
-        this.jogadores = new Player[numEquipas][numJogadoresEquipa];
+    /* =========================
+       TEAMS
+       ========================= */
 
-        this.respostasEquipa = new int[numEquipas];
+    public synchronized void addTeam(int teamId) {
+        if (teamsMap.containsKey(teamId)) {
+            System.out.println("[GameState] Team " + teamId + " already exists.");
+            return;
+        }
+        teamsMap.put(teamId, new Team(teamId, playersPerTeam));
+        System.out.println("[GameState] Team " + teamId + " added.");
+    }
 
-        for(int i = 0; i < numEquipas; i++) {
-            equipas[i] = new Team("Equipa " + (i + 1), i + 1);
-            for(int j = 0; j < numJogadoresEquipa; j++) {
-                jogadores[i][j] = new Player(i * numJogadoresEquipa + j, "Jogador " + (j + 1) + " da Equipa " + (i + 1));
+    public synchronized Team getTeam(int teamId) {return teamsMap.get(teamId);}
+
+    public synchronized ArrayList<Team> getTeams() {return new ArrayList<>(teamsMap.values());}
+
+    public synchronized int getGameCode() {return gameCode;}
+
+    public synchronized ArrayList<Player> getAllPlayers() {
+        ArrayList<Player> players = new ArrayList<>();
+        for (Team team : teamsMap.values()) {
+            players.addAll(team.getPlayers());
+        }
+        return players;
+    }
+
+    /* =========================
+       QUESTIONS
+       ========================= */
+
+    public synchronized void setQuestions(Question[] questions) {this.questions  =   questions;}
+
+    public synchronized Question[] getQuestions() {return questions;}
+
+
+    public synchronized void startGame() {
+
+        int totalPlayers = totalPlayersInGame();
+        if (totalPlayers <= 0)
+            throw new IllegalStateException("Cannot start game with 0 players");
+
+        for (Question q : questions) {
+
+            if (q instanceof TeamQuestion tq) {
+                for (Team team : teamsMap.values()) {
+                    tq.addTeam(team);
+                }
+                tq.initializeBarrier();
+            }
+
+            if (q instanceof IndividualQuestion iq) {
+                iq.setTotalPlayers(totalPlayers);
+                iq.initializeLatch();
             }
         }
     }
 
-    public int getNumEquipas() {
-        return numEquipas;
+
+    public synchronized Question getCurrentQuestion() {
+        if (questions == null || currentQuestionIndex >= questions.length) return null;
+        return questions[currentQuestionIndex];
     }
 
-    public int getNumJogadoresEquipa() {
-        return numJogadoresEquipa;
-    }
+    public synchronized int getCurrentQuestionIndex() {return currentQuestionIndex;}
 
-    public int getRespostasRecebidas() {
-        return respostasRecebidas;
-    }
+    /* =========================
+       START QUESTION
+       ========================= */
 
-    public int getNumPerguntas() {
-        return numPerguntas;
-    }
+    public synchronized void startCurrentQuestion() {
+        if (!isActive) throw new IllegalStateException("GameState startCurrentQuestion - Cannot start question in inactive game.");
 
-    public int getOrdemRespostas() {
-        return ordemRespostas;
-    }
+        Question current = getCurrentQuestion();
+        if (current == null) return;
 
-    public int getIndicePerguntaAtual() {
-        return indicePerguntaAtual;
-    }
-
-    public int getTotalJogadores() {
-        return numEquipas * numJogadoresEquipa;
-    }
-
-    public Player[] getJogadoresDaEquipa(int equipaID){
-        int indiceEquipa = equipaID - 1;
-        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length){
-            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
+        if (current instanceof IndividualQuestion iq) {
+            countdownLatch = iq.getCountdownLatch();
         }
-        return jogadores[indiceEquipa];
-    }
 
-    public Player getJogador(int equipaId, int jogadorId){
-        int indiceEquipa = equipaId - 1;
-        if(indiceEquipa < 0 || indiceEquipa >= jogadores.length || jogadorId < 0 || jogadorId >= jogadores[indiceEquipa].length){
-            throw new IllegalArgumentException("Equipa ID ou Jogador ID inválido: " + equipaId + ", " + jogadorId);
+        if (current instanceof TeamQuestion tq) {
+            // barrier já está inicializada no startGame()
         }
-        return jogadores[indiceEquipa][jogadorId];
-    }
 
-    public Team[] getEquipas() {
-        return equipas;
-    }
-
-    public Pergunta getPerguntaAtual() {
-        if(indicePerguntaAtual < perguntas.length) {
-            return perguntas[indicePerguntaAtual];
-        }
-        return null;
-    }
-
-    public int getEquipaDoJogador(Player jogador){
-        for(int equipa = 0; equipa < equipas.length; equipa++){
-            for(Player p : jogadores[equipa]){
-                if(p.getId() == jogador.getId()){
-                    return equipa + 1;
+        // Timer
+        questionTimer = new Timer();
+        questionTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (current instanceof IndividualQuestion && countdownLatch != null) {
+                    countdownLatch.tempoExpirado();
+                } else if (current instanceof TeamQuestion tq) {
+                    tq.getBarrier().tempoExpirado();
+                }
+                // notify external listener (server) that the time expired
+                if (roundTimeoutCallback != null) {
+                    try { roundTimeoutCallback.run(); } catch (Exception e) { e.printStackTrace(); }
                 }
             }
-        }
-        return -1;
+        }, Constants.QUESTION_TIME_LIMIT * 1000);
     }
 
-    public void reporRespostasEquipa(){
-        for(int i = 0; i < respostasEquipa.length; i++) {
-            respostasEquipa[i] = 0;
-        }
+    // Called by server to set a callback to be invoked when the question's time expires
+    public synchronized void setRoundTimeoutCallback(Runnable callback) {
+        this.roundTimeoutCallback = callback;
     }
 
-    public void reporOpcoesEscolhidas(){
-        for(int i = 0; i < jogadores.length; i++) {
-            for(int j = 0; j < jogadores[i].length; j++) {
-                jogadores[i][j].resetOpcaoEscolhida();
+    /* =========================
+       REGISTER ANSWER
+       ========================= */
+
+    public synchronized void registerAnswer(String username, int option) {
+        if(!isActive) throw new IllegalStateException("GameState registerAnswer - Cannot register answer in inactive game.");
+
+        Question current = getCurrentQuestion();
+        if (current == null) return;
+
+        for (Team team : teamsMap.values()) {
+            for (Player p : team.getPlayers()) {
+                if (!p.getName().equals(username)) continue;
+
+                p.setChosenOption(option);
+
+                if (current instanceof IndividualQuestion iq) {
+                    int order = responseCounter.incrementAndGet();
+                    p.setResponseOrder(order);
+
+                    int base = (option == iq.getCorrect()) ? iq.getPoints() : 0;
+                    if (order <= 2 && base > 0) base *= Constants.BONUS_FACTOR;
+
+                    // Score will be computed at end of round (processResponses); only decrement latch here
+                    // register answer in question (to capture answeredPlayers order)
+                    iq.registerAnswer(p, option);
+                    countdownLatch.countDown();
+                }
+
+                if (current instanceof TeamQuestion tq) {
+                    tq.playerAnswered(p, option == tq.getCorrect());
+                }
+                return;
             }
         }
     }
 
-    public void incrementarIndicePerguntaAtual(){
-        indicePerguntaAtual++;
-    }
+    /* =========================
+       END ROUND
+       ========================= */
 
-    public void incrementarOrdemRespostas(){
-        ordemRespostas++;
-    }
+    public synchronized RoundResult endRound() {
+        if(!isActive) throw new IllegalStateException("GameState endRound - Cannot end round in inactive game.");
 
+        Question current = getCurrentQuestion();
+        if (current == null) return null;
 
-    public void setPerguntas(Pergunta[] perguntas) {
-        this.perguntas = perguntas;
-    }
-
-    public boolean acabouJogo() {
-        return indicePerguntaAtual >= perguntas.length;
-    }
-
-    public synchronized int registarRespostaIndividual(){
-        incrementarOrdemRespostas();
-        respostasRecebidas++;
-        return ordemRespostas;
-    }
-
-    public synchronized void registarRespostaEquipa(int equipaID){
-        int indiceEquipa = equipaID - 1;
-        if(indiceEquipa < 0 || indiceEquipa >= numEquipas){
-            throw new IllegalArgumentException("Equipa ID inválido: " + equipaID);
-        }
-        respostasEquipa[indiceEquipa]++;
-    }
-
-    public void avancarParaProximaPergunta(){
-        indicePerguntaAtual++;
-        reporRespostas();
-    }
-
-    public void reporRespostas() {
-        respostasRecebidas = 0;
-        ordemRespostas = 0;
-        reporOpcoesEscolhidas();
-        reporRespostasEquipa();
-    }
-
-    public Player ocuparSlotJogador(int equipaId, String nomeJogador) {
-        Player[] equipa = jogadores[equipaId - 1];
-        for (Player p : equipa) {
-            if (!p.isJogadorConectado()) {
-                p.jogadorAtivo(nomeJogador);
-                return p;
+        // First, ensure any synchronization primitives have completed (barrier/latch handled elsewhere)
+        if (current instanceof TeamQuestion tq) {
+            try {
+                tq.getBarrier().await();
+            } catch (InterruptedException ignored) {}
+            // Process team responses for each team
+            for (Team t : teamsMap.values()) {
+                tq.processResponses(t);
             }
         }
-        return null;
+
+        if (current instanceof IndividualQuestion iq) {
+            // For individual question, aggregate and process responses per team
+            for (Team t : teamsMap.values()) {
+                iq.processResponses(t);
+            }
+        }
+
+        responseCounter.set(0);
+        currentQuestionIndex++;
+
+        if (questionTimer != null) questionTimer.cancel();
+
+        boolean gameEnded = currentQuestionIndex >= questions.length;
+        return new RoundResult(true, gameEnded, getCurrentScores());
     }
 
-    @Override
-    public String toString() { // todo method toString
-        return "GameState{" +
-                "gameCode=" + gameCode +
-                ", numEquipas=" + numEquipas +
-                ", numJogadoresEquipa=" + numJogadoresEquipa +
-                ", numPerguntas=" + numPerguntas +
-                ", indicePerguntaAtual=" + indicePerguntaAtual +
-                '}';
+    // Atomically check whether current question is complete and end the round if so.
+    // Returns the RoundResult if the round was ended by this call, or null otherwise.
+    public synchronized RoundResult tryEndRoundIfComplete() {
+        if (!isActive) return null;
+        if (!isCurrentQuestionComplete()) return null;
+        return endRound();
     }
 
+    // Assign a unique player name for this game (Player1, Player2, ...)
+    public synchronized String assignNextPlayerName() {
+        return "Player" + playerCounter.getAndIncrement();
+    }
 
-    public int getGameCode() {
-        return gameCode;
+    /* =========================
+       AUX
+       ========================= */
+
+    private synchronized int totalPlayersInGame() {
+        int total = 0;
+        for (Team t : teamsMap.values()) total += t.getCurrentSize();
+        return total;
+    }
+
+    public synchronized HashMap<String, Integer> getCurrentScores() {
+        HashMap<String, Integer> map = new HashMap<>();
+        for (Team t : teamsMap.values()) {
+            for (Player p : t.getPlayers()) {
+                map.put(p.getName(), p.getScore());
+            }
+        }
+        return map;
+    }
+
+    public synchronized boolean isCurrentQuestionComplete() {
+        Question current = getCurrentQuestion();
+        if (current == null) return true;
+
+        if (current instanceof IndividualQuestion iq) {
+            ModifiedCountdownLatch latch = iq.getCountdownLatch();
+            return latch != null && latch.getCount() <= 0;
+        }
+
+        if (current instanceof TeamQuestion tq) {
+            ModifiedBarrier barrier = tq.getBarrier();
+            return barrier != null && barrier.isComplete();
+        }
+
+        return true;
+    }
+
+    public synchronized boolean isActive() {return isActive;}
+    public synchronized void setActive(boolean active) {isActive = active;}
+
+
+    /* =========================
+       SEND OBJECTS
+       ========================= */
+
+    public synchronized SendIndividualQuestion createSendIndividualQuestion() {
+        if (!(getCurrentQuestion() instanceof IndividualQuestion iq)) return null;
+        return new SendIndividualQuestion(
+                iq.getQuestionText(),
+                iq.getOptions(),
+                currentQuestionIndex,
+                Constants.QUESTION_TIME_LIMIT
+        );
+    }
+
+    public synchronized SendTeamQuestion createSendTeamQuestion() {
+        if (!(getCurrentQuestion() instanceof TeamQuestion tq)) return null;
+        return new SendTeamQuestion(
+                tq.getQuestionText(),
+                tq.getOptions(),
+                currentQuestionIndex,
+                Constants.QUESTION_TIME_LIMIT
+        );
+    }
+
+    public synchronized SendFinalScores getFinalScores() {
+        return new SendFinalScores(getCurrentScores());
     }
 }

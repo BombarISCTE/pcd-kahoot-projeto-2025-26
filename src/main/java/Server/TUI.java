@@ -1,21 +1,36 @@
 package Server;
 
 import Game.GameState;
-import Game.Pergunta;
+import Game.Question;
+import Utils.Records.SendFinalScores;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Scanner;
+
+/*
+Class: TUI
+
+Public constructors:
+ - TUI(Server server)
+
+Public methods:
+ - void menu() throws IOException
+
+Notes:
+ - Text-based user interface for server commands: newGame, listGames, deleteGame, startGame, checkGameStats, exit
+*/
 
 /*
  TUI commands:
   - newGame
   - listGames
   - deleteGame
+  - startGame
   - checkGameStats
   - exit
 */
 public class TUI {
+
     private final Scanner scanner;
     private final Server server;
 
@@ -24,161 +39,141 @@ public class TUI {
         this.server = server;
     }
 
-    public void menuConsola() throws IOException {
-        System.out.println("-----------Server TUI-----------");
-        System.out.println("Options: newGame | listGames | deleteGame | checkGameStats | exit");
-
-//        // optional: preload questions for admin info (non-fatal)
-//        try {
-//            String caminhoFicheiro = "src/main/java/Game/FicheiroQuestoes.json";
-//            Pergunta[] perguntas = Pergunta.lerPerguntas(caminhoFicheiro);
-//            System.out.println("Loaded " + perguntas.length + " questions (if file exists).");
-//        } catch (Exception ignored) {}
+    public void menu() throws IOException {
+        System.out.println("----------- Server TUI -----------");
+        System.out.println("Options: newGame | listGames | deleteGame | startGame | checkGameStats | exit");
 
         while (true) {
-            System.out.print("\nChoose option > ");
+            System.out.print("\nTUI > ");
             String line = scanner.nextLine();
             if (line == null) break;
-            String cmd = line.trim().toLowerCase(); // para tornar case-insensitive
+
+            String cmd = line.trim().toLowerCase();
             if (cmd.isEmpty()) continue;
 
             try {
                 switch (cmd) {
-                    case "newgame":
-                    case "new":
-                        handleNewGame();
-                        break;
-
-                    case "listgames":
-                    case "list":
-                        server.listGames();
-                        break;
-
-                    case "deletegame":
-                    case "delete":
-                    case "remove":
-                        handleDeleteGame();
-                        break;
-
-                    case "checkgamestats":
-                    case "check":
-                        handleCheckGameStats();
-                        break;
-
-                    case "start":
-                    case "startgame":
-                        handleStartGame();
-                        break;
-
-                    case "exit":
-                    case "quit":
-                        System.out.println("Exiting TUI.");
+                    case "newgame", "new", "n" -> handleNewGame();
+                    case "listgames", "list", "ls" -> server.listGames();
+                    case "deletegame", "delete", "remove" -> handleDeleteGame();
+                    case "start", "startgame", "s" -> handleStartGame();
+                    case "checkgamestats", "check" -> handleCheckGameStats();
+                    case "exit", "quit", "q" -> {
+                        System.out.println("Exiting TUI (server keeps running).");
                         return;
-
-                    default:
-                        System.out.println("Unknown option: " + cmd);
-                        break;
+                    }
+                    default -> System.out.println("Unknown option: " + cmd);
                 }
-            } catch (NumberFormatException nfe) {
-                System.out.println("Invalid number format.");
             } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+                System.out.println("TUI error: " + e.getMessage());
             }
         }
     }
+
+    /* =======================
+       COMMAND HANDLERS
+       ======================= */
 
     private void handleNewGame() {
         try {
             System.out.print("Number of teams: ");
-            int numEquipas = Integer.parseInt(scanner.nextLine().trim());
+            int numTeams = Integer.parseInt(scanner.nextLine().trim());
+
             System.out.print("Players per team: ");
-            int jogadoresPorEquipa = Integer.parseInt(scanner.nextLine().trim());
-            System.out.print("Number of questions: ");
-            int numPerguntas = Integer.parseInt(scanner.nextLine().trim());
-            if (numEquipas < 1 || jogadoresPorEquipa < 1 || numPerguntas < 1) {
-                System.out.println("All numbers must be >= 1.");
+            int playersPerTeam = Integer.parseInt(scanner.nextLine().trim());
+
+            if (numTeams < 1 || playersPerTeam < 1) {
+                System.out.println("Values must be >= 1.");
                 return;
             }
 
-            int code = server.createGameId();
-            GameState game = new GameState(numEquipas, jogadoresPorEquipa, numPerguntas, code);
+            int gameId = server.createGameId();
+            GameState game = new GameState(numTeams, playersPerTeam, gameId);
 
-            System.out.print("Optional: questions file name (e.g. file.json) [Enter to skip]: ");
+            System.out.print("Questions file name: ");
             String fileName = scanner.nextLine().trim();
 
             if (!fileName.isEmpty()) {
                 String path = "src/main/resources/Perguntas/" + fileName;
-                try {
-                    Pergunta[] perguntas = Pergunta.lerPerguntas(path);
-                    game.setPerguntas(perguntas);
-                    System.out.println("Loaded " + perguntas.length + " questions from " + path);
-                } catch (Exception e) {
-                    System.out.println("Could not load questions from Game/: " + e.getMessage());
-                }
+                String jsonPath = Utils.FormatQuestions.convertTxtToJsonPath(path);
+                Question[] perguntas = Utils.FormatQuestions.readQuestions(jsonPath);
+
+                System.out.println(perguntas.length + " questions were loaded from: " + jsonPath);
+                System.out.println("First question: " + perguntas[0].getQuestionText());
+                System.out.println("Last question: " + perguntas[perguntas.length - 1].getQuestionText());
+
+                // Apenas guardar as perguntas no GameState, sem inicializar barreiras/latches
+                game.setQuestions(perguntas);
+                System.out.println("Loaded " + perguntas.length + " questions.");
             }
 
+            // Adiciona o jogo ao servidor
             server.addGame(game);
-            System.out.println("Game created with code: " + code);
+            System.out.println("Game created with code: " + gameId);
 
-        } catch (NumberFormatException nfe) {
-            System.out.println("Invalid number format, aborted creation.");
+        } catch (Exception e) {
+            server.decrementGameIdCounter();
+            System.out.println("Failed to create game: " + e.getMessage());
         }
     }
 
+
     private void handleStartGame() {
         try {
-            System.out.print("Enter gameId to start: ");
-            String s = scanner.nextLine().trim();
-            int code = Integer.parseInt(s);
-            GameState game = server.getGame(code);
+            System.out.print("Enter gameId: ");
+            int gameId = Integer.parseInt(scanner.nextLine().trim());
+
+            GameState game = server.getGame(gameId);
             if (game == null) {
-                System.out.println("No game with code " + code);
+                System.out.println("No game with code " + gameId);
                 return;
             }
-            //game.startGame();
-            System.out.println("Game " + code + " started.");
-        } catch (NumberFormatException nfe) {
-            System.out.println("Invalid game code.");
+
+            // Chamada que valida equipas/jogadores e inicializa barreiras/latches
+            server.startGame(gameId);
+
+            System.out.println("Game " + gameId + " started.");
+            // Aqui podes chamar startCurrentQuestion para enviar GUI/primeira questão
+            game.startCurrentQuestion();
+
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid gameId.");
+        } catch (IllegalStateException e) {
+            System.out.println("Cannot start game: " + e.getMessage());
         }
     }
 
 
     private void handleDeleteGame() {
         try {
-            System.out.print("Enter game code to delete: ");
-            String s = scanner.nextLine().trim();
-            int code = Integer.parseInt(s);
-            server.removeGame(code);
-        } catch (NumberFormatException nfe) {
-            System.out.println("Invalid game code.");
+            System.out.print("Enter gameId to delete: ");
+            int gameId = Integer.parseInt(scanner.nextLine().trim());
+            server.removeGame(gameId);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid gameId.");
         }
     }
 
-    private void handleCheckGameStats() { //todo
+    private void handleCheckGameStats() {
         try {
-            System.out.print("Enter game code to inspect: ");
-            String s = scanner.nextLine().trim();
-            int code = Integer.parseInt(s);
-            GameState game = server.getGame(code);
+            System.out.print("Enter gameId: ");
+            int gameId = Integer.parseInt(scanner.nextLine().trim());
+
+            GameState game = server.getGame(gameId);
             if (game == null) {
-                System.out.println("No game with code " + code);
+                System.out.println("No game with code " + gameId);
                 return;
             }
 
-            // Try to call Game.GameStatistics.printStats(GameState) via reflection if available
-            try {
-                Class<?> statsClass = Class.forName("Game.GameStatistics");
-                Method printMethod = statsClass.getMethod("printStats", GameState.class);
-                printMethod.invoke(null, game);
-            } catch (ClassNotFoundException | NoSuchMethodException cnfe) {
-                // fallback: print basic GameState info
-                System.out.println("Game statistics not available. Falling back to state summary:");
-                System.out.println(game.toString());
-            } catch (Exception e) {
-                System.out.println("Error invoking GameStatistics: " + e.getMessage());
-            }
-        } catch (NumberFormatException nfe) {
-            System.out.println("Invalid game code.");
+            SendFinalScores scores = game.getFinalScores();
+            System.out.println("Final scores for game " + gameId + ":");
+            scores.finalScores().forEach(
+                    (player, score) ->
+                            System.out.println(player + ": " + score)
+            );
+
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid gameId.");
         }
     }
 }
