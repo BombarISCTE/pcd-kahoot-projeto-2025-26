@@ -1,12 +1,35 @@
 package Client;
 
-import Utils.Records.*;
+import Utils.Records.SendAnswer;
+import Utils.Records.SendIndividualQuestion;
+import Utils.Records.SendTeamQuestion;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+/*
+Class: ClientGUI (extends JFrame)
+
+Public constructors:
+ - ClientGUI(Client client)
+
+Public methods (signatures):
+ - void setConnectedPlayers(ArrayList<PlayerInfo> players)
+ - void addPlayer(PlayerInfo p)
+ - void mostrarNovaPergunta(SendTeamQuestion question)
+ - void mostrarNovaPergunta(SendIndividualQuestion question)
+ - void atualizarPlacar(HashMap<String,Integer> scores)
+ - void showRoundStats(HashMap<String,Integer> scores)
+ - void gameEnded(HashMap<String,Integer> finalScores)
+ - void setSetMensagemEspaco(String msg)
+
+Notes:
+ - Handles displaying questions, options and the right-hand scoreboard.
+ - All UI updates should be invoked on the EDT.
+*/
 
 public class ClientGUI extends JFrame {
 

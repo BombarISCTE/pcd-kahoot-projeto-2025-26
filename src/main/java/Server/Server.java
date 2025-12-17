@@ -2,7 +2,10 @@ package Server;
 
 import Game.*;
 import Utils.Constants;
-import Utils.Records.*;
+import Utils.Records.GameStartedWithPlayers;
+import Utils.Records.PlayerInfo;
+import Utils.Records.RoundResult;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,6 +13,35 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+/*
+Class: Server
+
+Public constructors:
+ - Server() throws IOException
+
+Public methods (signatures):
+ - void startServer()
+ - void startTUI()
+ - int createGameId()
+ - int generatePlayerId()
+ - void addGame(GameState game)
+ - void removeGame(int gameId)
+ - GameState getGame(int gameId)
+ - void addTeam(int gameId, int teamId)
+ - void listGames()
+ - int createTeamId(int gameId)
+ - void startGame(int gameId)
+ - void nextQuestion(int gameId)
+ - void broadcastToGame(Object message, int gameId)
+ - void closeServerSocket()
+ - boolean isRunning()
+ - static void main(String[] args)
+
+Notes:
+ - Server handles accepting socket connections and manages GameState instances.
+ - Uses ClientHandler instances to interact with clients.
+*/
 
 public class Server {
 
@@ -25,7 +57,8 @@ public class Server {
 
     }
 
-    public void decrementGameIdCounter() {gameIdCounter.decrementAndGet();}
+    public void decrementGameIdCounter() {gameIdCounter.decrementAndGet();} // quick fix mas vai dar asneira
+                // na concorrência mas para agora chega
 
     public void startServer() {
         startTUI();

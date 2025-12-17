@@ -8,6 +8,19 @@ import java.io.IOException;
 import java.util.Scanner;
 
 /*
+Class: TUI
+
+Public constructors:
+ - TUI(Server server)
+
+Public methods:
+ - void menu() throws IOException
+
+Notes:
+ - Text-based user interface for server commands: newGame, listGames, deleteGame, startGame, checkGameStats, exit
+*/
+
+/*
  TUI commands:
   - newGame
   - listGames

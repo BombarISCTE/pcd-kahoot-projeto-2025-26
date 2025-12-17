@@ -2,6 +2,7 @@ package Game;
 
 import Utils.Constants;
 import Utils.ModifiedBarrier;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -9,6 +10,26 @@ import java.util.HashMap;
  * Pergunta de equipa: basta um jogador acertar para a equipa ganhar pontos,
  * se todos acertarem, a pontuação é duplicada
  */
+/*
+Class: TeamQuestion (extends Question)
+
+Public constructors:
+ - TeamQuestion(String questionText, int correct, int points, String[] options)
+
+Public / synchronized methods (signatures):
+ - synchronized void addTeam(Team team)
+ - synchronized void playerAnswered(Player player, boolean correct)
+ - synchronized void initializeBarrier()
+ - synchronized void processResponses(Team team)
+ - ModifiedBarrier getBarrier()
+ - void setBarrier(ModifiedBarrier barrier)
+ - StringBuilder formatedClassName()
+
+Notes:
+ - Maintains internal map of teams and a ModifiedBarrier to wait for all responses or timeout.
+ - processResponses assigns team score and resets per-player temporary states.
+*/
+
 public class TeamQuestion extends Question {
 
     private HashMap<Integer, Team> teams;

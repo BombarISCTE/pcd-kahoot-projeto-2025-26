@@ -2,15 +2,34 @@ package Client;
 
 import Utils.Constants;
 import Utils.Records.*;
-import Utils.Records.SendAnswer;
 
-import javax.swing.SwingUtilities;
-import java.io.*;
-import java.net.Socket;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import javax.swing.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
+import java.net.Socket;
+
+/*
+Class: Client
+
+Public constructors:
+ - Client(String serverIP, int serverPort, String username, int teamId, int gameId)
+
+Public methods (signatures):
+ - String getUsername()
+ - void setUsername(String username)
+ - void start() throws IOException
+ - void listenLoop()
+ - synchronized void sendMessage(Serializable msg)
+ - void closeEverything()
+ - static void main(String[] args)
+
+Notes:
+ - Client manages socket connection, reads incoming Records and updates ClientGUI on the EDT.
+ - Handles AssignedName, GameStartedWithPlayers, SendIndividualQuestion, SendTeamQuestion, RoundResult, SendFinalScores, refuseConnection and error messages.
+*/
 
 public class Client {
 

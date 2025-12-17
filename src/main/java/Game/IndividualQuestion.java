@@ -4,7 +4,28 @@ import Utils.Constants;
 import Utils.ModifiedCountdownLatch;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+
+/*
+Class: IndividualQuestion (extends Question)
+
+Public constructors:
+ - IndividualQuestion(String questionText, int correct, int points, String[] options)
+
+Public / synchronized methods (signatures):
+ - void registerAnswer(Player player, int chosenOption)
+ - void processResponses(Team team)
+ - StringBuilder formatedClassName()
+ - int getTotalPlayers()
+ - void setTotalPlayers(int totalPlayers)
+ - ArrayList<Player> getAnsweredPlayers()
+ - void setCountdownLatch(ModifiedCountdownLatch latch)
+ - void initializeLatch()
+ - ModifiedCountdownLatch getCountdownLatch()
+
+Notes:
+ - Handles per-player response ordering and prepares the ModifiedCountdownLatch for the question.
+ - processResponses aggregates team score and resets per-player temporary state.
+*/
 
 public class IndividualQuestion extends Question {
 

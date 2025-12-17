@@ -3,13 +3,52 @@ package Game;
 import Utils.Constants;
 import Utils.ModifiedBarrier;
 import Utils.ModifiedCountdownLatch;
-import Utils.Records.*;
+import Utils.Records.RoundResult;
+import Utils.Records.SendFinalScores;
+import Utils.Records.SendIndividualQuestion;
+import Utils.Records.SendTeamQuestion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
+
+/*
+Class: GameState
+
+Public constructors:
+ - GameState(int numTeams, int playersPerTeam, int gameCode)
+
+Public / synchronized methods (signatures):
+ - void addTeam(int teamId)
+ - Team getTeam(int teamId)
+ - ArrayList<Team> getTeams()
+ - int getGameCode()
+ - ArrayList<Player> getAllPlayers()
+ - void setQuestions(Question[] questions)
+ - Question[] getQuestions()
+ - void startGame()                          // initialize barriers/latches for all questions
+ - Question getCurrentQuestion()
+ - int getCurrentQuestionIndex()
+ - void startCurrentQuestion()              // starts timer/latch/barrier for current question
+ - void setRoundTimeoutCallback(Runnable callback)
+ - void registerAnswer(String username, int option)
+ - RoundResult endRound()
+ - RoundResult tryEndRoundIfComplete()
+ - String assignNextPlayerName()
+ - HashMap<String,Integer> getCurrentScores()
+ - boolean isCurrentQuestionComplete()
+ - boolean isActive()
+ - void setActive(boolean active)
+ - SendIndividualQuestion createSendIndividualQuestion()
+ - SendTeamQuestion createSendTeamQuestion()
+ - SendFinalScores getFinalScores()
+
+Notes:
+ - This class manages the per-game state, teams and questions.
+ - It exposes synchronization points for starting questions and ending rounds.
+*/
 
 public class GameState {
 

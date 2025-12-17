@@ -1,5 +1,24 @@
 package Game;
 
+/*
+Class: Player
+
+Public constructors:
+ - Player(String name, int teamId)
+
+Public / synchronized methods (signatures):
+ - void addScore(int points)
+ - void setChosenOption(int chosenOption)
+ - int getChosenOption()
+ - void resetChosenOption()
+ - int getTeamId()
+ - int getScore()
+ - void setResponseOrder(int order)
+ - int getResponseOrder()
+ - String getName()
+ - String toString()
+*/
+
 public class Player {
 
     private final String name;

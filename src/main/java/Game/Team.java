@@ -2,6 +2,24 @@ package Game;
 
 import java.util.ArrayList;
 
+/*
+Class: Team
+
+Public constructors:
+ - Team(int teamId, int maxPlayersPerTeam)
+
+Public / synchronized methods (signatures):
+ - void addPlayer(Player player)
+ - void removePlayer(String name)
+ - ArrayList<Player> getPlayers()
+ - int getTotalScore()
+ - boolean isFull()
+ - int getCurrentSize()
+ - int getTeamId()
+ - String toString()
+ - Player getPlayer(String username)
+*/
+
 public class Team {
 
     private final int teamId;

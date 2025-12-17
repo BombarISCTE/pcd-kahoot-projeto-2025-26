@@ -4,8 +4,8 @@ import Game.IndividualQuestion;
 import Game.Question;
 import Game.TeamQuestion;
 import com.google.gson.*;
+
 import java.io.*;
-import java.util.ArrayList;
 
 public class FormatQuestions {
 

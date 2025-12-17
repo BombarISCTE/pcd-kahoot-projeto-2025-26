@@ -1,4 +1,18 @@
 package Utils;
+/*
+Class: Timer (utility)
+
+Public constructors:
+ - Timer(ModifiedCountdownLatch latch)
+ - Timer(int tempo, ModifiedBarrier barrier)
+
+Public methods:
+ - void run()
+ - static void main(String[] args)
+
+Notes:
+ - Helper thread to trigger tempoExpirado on a latch or a barrier after a specified wait.
+*/
 public class Timer extends Thread {
     private ModifiedCountdownLatch latch = null;
     private ModifiedBarrier barrier = null;

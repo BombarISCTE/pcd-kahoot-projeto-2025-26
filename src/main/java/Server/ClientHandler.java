@@ -7,6 +7,27 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 
+/*
+Class: ClientHandler (extends Thread)
+
+Public constructors:
+ - ClientHandler(Socket socket, Server server)
+
+Public methods / fields of interest:
+ - void run()
+ - void sendNextQuestion()
+ - void broadcastMessage(Object message, int gameId)
+ - synchronized void sendMessage(Object message)
+ - void closeEverything()
+ - int getGameId()
+
+Fields:
+ - static ArrayList<ClientHandler> clientHandlers
+
+Notes:
+ - Handles handshake, listens to incoming Records, and forwards messages to server/game state.
+*/
+
 public class ClientHandler extends Thread {
 
     private final Server server;

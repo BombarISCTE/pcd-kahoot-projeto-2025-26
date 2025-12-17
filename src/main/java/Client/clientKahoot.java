@@ -1,7 +1,16 @@
 package Client;
 
 import Game.Question;
-import jdk.jshell.execution.Util;
+
+/*
+Class: clientKahoot (demo / runner)
+
+Public methods:
+ - static void main(String[] args)
+
+Notes:
+ - Example runner that constructed a Client and ClientGUI for local testing.
+*/
 
 public class clientKahoot {
 

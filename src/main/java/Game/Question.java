@@ -1,7 +1,22 @@
 package Game;
 
-import com.google.gson.*;
-import java.io.*;
+/*
+Class: Question
+
+Public constructors:
+ - Question(String questionText, int correct, int points, String[] options)
+
+Public methods (signatures):
+ - String getQuestionText()
+ - int getPoints()
+ - int getCorrect()
+ - String[] getOptions()
+ - abstract void processResponses(Team team)
+ - abstract StringBuilder formatedClassName()
+ - String toString()
+
+Notes: abstract base class for questions. The concrete subclasses implement processResponses and formatedClassName.
+*/
 
 public abstract class Question {
     protected String questionText;

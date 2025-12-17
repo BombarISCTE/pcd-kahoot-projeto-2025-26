@@ -5,6 +5,23 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/*
+Class: ModifiedBarrier
+
+Public constructors:
+ - ModifiedBarrier(int totalPlayers, Runnable barrierAction)
+
+Public methods:
+ - void chegouJogador()
+ - void tempoExpirado()
+ - void await() throws InterruptedException
+ - void reset()
+ - boolean isComplete()
+
+Notes:
+ - Simple barrier with timeout support and a single barrier action.
+*/
+
 public class ModifiedBarrier {
 
     private final Lock lock = new ReentrantLock();
