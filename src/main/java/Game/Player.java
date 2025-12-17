@@ -60,6 +60,7 @@ public class Player {
     public void desconectarJogador() {
         this.jogadorConectado = false;
         this.opcaoEscolhida = -1;
+        this.name = null;
     }
 
 }

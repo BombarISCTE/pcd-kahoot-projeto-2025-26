@@ -137,7 +137,7 @@ public class TUI {
                 System.out.println("No game with code " + code);
                 return;
             }
-            //game.startGame();
+//            game.startGame();
             System.out.println("Game " + code + " started.");
         } catch (NumberFormatException nfe) {
             System.out.println("Invalid game code.");

@@ -81,7 +81,7 @@ public class Server {
         GameEngine gameEngine = new GameEngine(this, game, perguntas);
         gameList.add(game);
         gameEngines.put(game.getGameCode(), gameEngine);
-        new Thread(gameEngine).start();
+//        new Thread(gameEngine).start(); //del
     }
 
     public synchronized void removeGame(int gameId) {

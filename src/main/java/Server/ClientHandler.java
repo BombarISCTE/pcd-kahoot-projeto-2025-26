@@ -19,6 +19,8 @@ public class ClientHandler extends Thread {
 
     private final Server server;
 
+    private boolean registadoJogo = false;//add
+
     public ClientHandler(Socket socket, Server server) {
         this.server = server;
         this.socket = socket;
@@ -38,19 +40,18 @@ public class ClientHandler extends Thread {
                 clientHandlers.add(this);
             }
 
-            GameEngine engine = server.getGameEngine(gameId);
-            if (engine == null) {
-                sendMessage("Erro: jogo ainda não iniciado.");
-                closeEverything();
-                throw new IllegalStateException("GameEngine inexistente");
-            }
+//            GameEngine engine = server.getGameEngine(gameId);
+//            if (engine == null) {
+//                sendMessage("Erro: jogo ainda não iniciado.");
+//                sendMessage(new JoinRejected("O jogo não existe")); //add
+//                closeEverything();
+//                return;//add
+//                throw new IllegalStateException("GameEngine inexistente");
+//            }
 
-            engine.registarJogador(teamId, username);
+//            engine.registarJogador(teamId, username); //del
 
-            System.out.println("Cliente ligado: " + username +
-                    " | jogo " + gameId +
-                    " | equipa " + teamId);
-
+            System.out.println("Cliente ligado: " + username + " | jogo " + gameId + " | equipa " + teamId);
         } catch (Exception e) {
             throw new RuntimeException("Erro ao criar ClientHandler", e);
         }
@@ -59,6 +60,23 @@ public class ClientHandler extends Thread {
     @Override
     public void run() {
         try {
+            GameEngine gameEngine = server.getGameEngine(gameId);
+            if(gameEngine == null){
+//                sendMessage("Erro: jogo não existe");
+                sendMessage(new JoinRejected("O jogo não existe ou já terminou")); //add
+                closeEverything();
+                return;
+            }
+
+            registadoJogo = gameEngine.registarJogador(teamId, username);
+
+            if (!registadoJogo) {
+//                sendMessage("Erro: não foi possível entrar no jogo.");
+                sendMessage(new JoinRejected("Equipa cheia ou nome já em uso.")); //add
+                closeEverything();
+                return;
+            }
+
             while (!socket.isClosed()) {
                 Object msg = in.readObject();
                 handleMessage(msg);
@@ -70,17 +88,9 @@ public class ClientHandler extends Thread {
 
     private void handleMessage(Object msg) {
         if (msg instanceof Answer a) {
-            System.out.println("Resposta recebida: " +
-                    a.getUsername() +
-                    " | equipa " + a.getTeamId() +
-                    " | opção " + a.getOpcaoEscolhida());
+            System.out.println("Resposta recebida: " + a.getUsername() + " | equipa " + a.getTeamId() + " | opção " + a.getOpcaoEscolhida());
 
-            server.getGameEngine(gameId)
-                    .registarResposta(
-                            a.getUsername(),
-                            a.getTeamId(),
-                            a.getOpcaoEscolhida()
-                    );
+            server.getGameEngine(gameId).registarResposta(a.getUsername(), a.getTeamId(), a.getOpcaoEscolhida());
         } else {
             System.out.println("Mensagem desconhecida do cliente: " + msg);
         }
@@ -90,7 +100,7 @@ public class ClientHandler extends Thread {
         try {
             out.writeObject(msg);
             out.flush();
-        } catch (IOException e) {
+        } catch (Exception e) {
             closeEverything();
         }
     }
@@ -99,10 +109,25 @@ public class ClientHandler extends Thread {
         synchronized (clientHandlers) {
             clientHandlers.remove(this);
         }
-        try { in.close(); } catch (Exception ignored) {}
-        try { out.close(); } catch (Exception ignored) {}
-        try { socket.close(); } catch (Exception ignored) {}
+        GameEngine gameEngine = server.getGameEngine(gameId);//add
+        if (gameEngine != null && registadoJogo) {//add
+            gameEngine.removerJogador(username);//add
+        }
+        try {
+            in.close();
+        } catch (Exception ignored) {
 
+        }
+        try {
+            out.close();
+        } catch (Exception ignored) {
+
+        }
+        try {
+            socket.close();
+        } catch (Exception ignored) {
+
+        }
         System.out.println("Cliente desligado: " + username);
     }
 

@@ -23,6 +23,9 @@ public class GameEngine implements Runnable{
 
     private final Map<String, Player> players = new HashMap<>();
 
+    private int jogadoresLigados = 0; //add
+    private boolean jogoIniciado = false; //add
+
     public GameEngine(Server server, GameState gameState, Pergunta[] perguntas) {
         this.server = server;
         this.gameState = gameState;
@@ -155,14 +158,29 @@ public class GameEngine implements Runnable{
         }
     }
 
-    public synchronized void registarJogador(int equipaId, String nomeJogador) {
-        if (players.containsKey(nomeJogador)) return;
+    public synchronized boolean registarJogador(int equipaId, String nomeJogador) {
+        if (players.containsKey(nomeJogador)){
+            return false;
+        }
+
+        if(jogoIniciado){
+            return false;
+        }
 
         Player jogador = gameState.ocuparSlotJogador(equipaId, nomeJogador);
-        if (jogador != null){
-            players.put(nomeJogador, jogador);
-            System.out.println("Jogador registado: " + nomeJogador + " na equipa " + equipaId);
+        if(jogador == null){
+            return false;
         }
+
+        players.put(nomeJogador, jogador);//add
+        jogadoresLigados++;//add
+        System.out.println("Jogador registado: " + nomeJogador + " na equipa " + equipaId);
+        System.out.println("[DEBUG] jogadoresLigados = " + jogadoresLigados + " / " + gameState.getTotalJogadores());
+        if(!jogoIniciado && jogadoresLigados == gameState.getTotalJogadores()){//add
+            jogoIniciado = true;//add
+            new Thread(this).start();//add
+        }
+        return true;
     }
 
 //    public synchronized void adicionarCliente(DealWithClient cliente) {
@@ -173,6 +191,19 @@ public class GameEngine implements Runnable{
         Pergunta perguntaAtual = gameState.getPerguntaAtual();
         SendQuestion novaPergunta = new SendQuestion(perguntaAtual.getQuestao(), perguntaAtual.getOpcoes(), gameState.getIndicePerguntaAtual() + 1);
         server.broadcastToGame(gameState.getGameCode(), novaPergunta);
+    }
+
+    //add
+    public synchronized void removerJogador(String nomeJogador){
+        Player jogador = players.remove(nomeJogador);
+        if(jogador != null){
+            jogador.desconectarJogador();
+            jogadoresLigados--;
+            System.out.println("Jogador removido: " + nomeJogador + " (" + jogadoresLigados + "/" + gameState.getTotalJogadores() + ")");
+        }else {
+            System.out.println("[DEBUG] removerJogador ignorado (não registado): " + nomeJogador);
+
+        }
     }
 
 }

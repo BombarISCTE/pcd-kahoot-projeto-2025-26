@@ -2,6 +2,7 @@ package Client;
 
 
 import Messages.ClientConnect;
+import Messages.JoinRejected;
 import Messages.RoundStats;
 import Messages.SendQuestion;
 
@@ -37,7 +38,7 @@ public class Client implements Runnable, Serializable {
     @Override
     public void run() {
         try {
-            SwingUtilities.invokeLater(() -> {
+            SwingUtilities.invokeAndWait(() -> {//alterado de invokeLater para invokeAndWait
                 gui = new ClientGUI(this);
             });
             connectToServer();
@@ -69,7 +70,14 @@ public class Client implements Runnable, Serializable {
                     Object msg = objectIn.readObject();
 
                     if (msg instanceof SendQuestion sendQuestion) {
-                        gui.mostrarPergunta(sendQuestion);
+                        SwingUtilities.invokeLater(() -> {//add
+                            if (gui != null) {//add
+                                gui.mostrarPergunta(sendQuestion);//add
+                            }
+                        });
+
+//                        gui.mostrarPergunta(sendQuestion);del
+
 //                        System.out.println("Pergunta #" + sq.getQuestionNumber() + ": " + sq.getQuestion());
 //                        String[] options = sq.getOptions();
 //                        for (int i = 0; i < options.length; i++) {
@@ -77,7 +85,21 @@ public class Client implements Runnable, Serializable {
 //                        }
 //                        System.out.println("Tempo limite: " + sq.getTimeLimit() + "s");
                     } else if (msg instanceof RoundStats roundStats) {
-                        gui.atualizarPlacar(roundStats.getPontosJogadores());
+                        SwingUtilities.invokeLater(() -> {//add
+                            if (gui != null) {//add
+                                gui.atualizarPlacar(roundStats.getPontosJogadores());//add
+                            }
+                        });
+//                        gui.atualizarPlacar(roundStats.getPontosJogadores()); //del
+                    }else if(msg instanceof JoinRejected joinRejected) { //add
+                        SwingUtilities.invokeLater(() -> { //add
+                            JOptionPane.showMessageDialog(gui, joinRejected.getMotivo(), "Entrada rejeitada", JOptionPane.WARNING_MESSAGE); //add
+                            if(gui != null){//add
+                                gui.dispose();//add
+                            }
+                            closeEverything();//add
+                            System.exit(0);//add
+                        });
                     } else {
                         System.out.println("Mensagem recebida de tipo desconhecido: " + msg);
                     }
