@@ -4,11 +4,13 @@ import Utils.Constants;
 import Utils.Records.*;
 import Utils.Records.SendAnswer;
 
+import javax.swing.SwingUtilities;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.lang.reflect.InvocationTargetException;
 
 public class Client {
 
@@ -57,11 +59,13 @@ public class Client {
                 Object obj = inputStream.readObject();
                 if (obj == null) continue;
 
+                System.out.println("Client: received message -> " + obj.getClass().getSimpleName());
+
                 switch (obj.getClass().getSimpleName()) {
                     case "ClientConnectAck" -> {
                         ClientConnectAck ack = (ClientConnectAck) obj;
                         if (gui != null) {
-                            gui.setConnectedPlayers(ack.connectedPlayers());
+                            SwingUtilities.invokeLater(() -> gui.setConnectedPlayers(ack.connectedPlayers()));
                         } else {
                             // GUI not created yet; ignore lobby ack – server will send GameStartedWithPlayers on start
                         }
@@ -69,43 +73,45 @@ public class Client {
                     case "NewPlayerConnected" -> {
                         NewPlayerConnected npc = (NewPlayerConnected) obj;
                         if (gui != null) {
-                            gui.addPlayer(npc.player());
+                            SwingUtilities.invokeLater(() -> gui.addPlayer(npc.player()));
                         } else {
                             // GUI not created yet; ignore – will receive authoritative list at GameStartedWithPlayers
                         }
                     }
                     case "SendIndividualQuestion" -> {
-                        if (gui != null) gui.mostrarNovaPergunta((SendIndividualQuestion) obj);
+                        SendIndividualQuestion siq = (SendIndividualQuestion) obj;
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.mostrarNovaPergunta(siq));
                         else System.out.println("Received SendIndividualQuestion before GUI creation; ignoring.");
                     }
                     case "SendTeamQuestion" -> {
-                        if (gui != null) gui.mostrarNovaPergunta((SendTeamQuestion) obj);
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.mostrarNovaPergunta((SendTeamQuestion) obj));
                         else System.out.println("Received SendTeamQuestion before GUI creation; ignoring.");
                     }
                     case "SendRoundStats" -> {
                         SendRoundStats stats = (SendRoundStats) obj;
-                        if (gui != null) gui.atualizarPlacar(stats.playerScores());
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.atualizarPlacar(stats.playerScores()));
                         else System.out.println("Received SendRoundStats before GUI creation; ignoring.");
                     }
                     case "SendFinalScores" -> {
                         SendFinalScores finalScores = (SendFinalScores) obj;
-                        if (gui != null) gui.gameEnded(finalScores.finalScores());
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.gameEnded(finalScores.finalScores()));
                         else System.out.println("Received SendFinalScores before GUI creation; ignoring.");
                     }
                     case "GameEnded" -> {
-                        if (gui != null) {
+                        if (gui != null) SwingUtilities.invokeLater(() -> {
                             gui.setMensagemEspaco.setText("Jogo terminado pelo servidor!");
                             gui.setOptionsEnabled(false);
-                        } else System.out.println("Received GameEnded before GUI creation.");
+                        });
+                        else System.out.println("Received GameEnded before GUI creation.");
                     }
                     case "ErrorMessage" -> {
                         ErrorMessage em = (ErrorMessage) obj;
-                        if (gui != null) gui.setMensagemEspaco.setText("Erro: " + em.message());
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.setMensagemEspaco.setText("Erro: " + em.message()));
                         else System.out.println("Server error: " + em.message());
                     }
                     case "FatalErrorMessage" -> {
                         FatalErrorMessage fm = (FatalErrorMessage) obj;
-                        if (gui != null) gui.setMensagemEspaco.setText("Erro fatal: " + fm.message());
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.setMensagemEspaco.setText("Erro fatal: " + fm.message()));
                         else System.out.println("Fatal error from server: " + fm.message());
                         closeEverything();
                         return;
@@ -113,35 +119,44 @@ public class Client {
                     case "refuseConnection" -> {
                         Utils.Records.refuseConnection rc = (Utils.Records.refuseConnection) obj;
                         // show message to user and close
-                        if (gui != null) gui.setMensagemEspaco.setText("Conexão recusada: " + rc.reason());
+                        if (gui != null) SwingUtilities.invokeLater(() -> gui.setMensagemEspaco.setText("Conexão recusada: " + rc.reason()));
                         else System.out.println("Conexão recusada: " + rc.reason());
                         closeEverything();
                         return;
                     }
                     case "GameStartedWithPlayers" -> {
                         GameStartedWithPlayers gs = (GameStartedWithPlayers) obj;
-                        // create GUI now and populate player list
+                        // create GUI now and populate player list synchronously on EDT so we don't miss the immediately following question
                         if (gui == null) {
-                            gui = new ClientGUI(this);
-                        }
-                        if (gs.connectedPlayers() != null) {
-                            gui.setConnectedPlayers(gs.connectedPlayers());
+                            try {
+                                SwingUtilities.invokeAndWait(() -> {
+                                    gui = new ClientGUI(this);
+                                    if (gs.connectedPlayers() != null) gui.setConnectedPlayers(gs.connectedPlayers());
+                                });
+                            } catch (InterruptedException | InvocationTargetException e) {
+                                System.out.println("Failed to create GUI on EDT: " + e.getMessage());
+                                Thread.currentThread().interrupt();
+                            }
+                        } else {
+                            if (gs.connectedPlayers() != null) SwingUtilities.invokeLater(() -> gui.setConnectedPlayers(gs.connectedPlayers()));
                         }
                     }
                     default -> System.out.println("Cliente recebeu mensagem desconhecida: " + obj.getClass().getName());
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
-            if (gui != null) gui.setMensagemEspaco.setText("Conexão perdida com o servidor.");
+            e.printStackTrace();
+            if (gui != null) SwingUtilities.invokeLater(() -> gui.setMensagemEspaco.setText("Conexão perdida com o servidor."));
         }
     }
 
-    public void sendMessage(Serializable msg) {
+    public synchronized void sendMessage(Serializable msg) {
         try {
             outputStream.writeObject(msg);
             outputStream.flush();
         } catch (IOException e) {
-            gui.setMensagemEspaco.setText("Erro ao enviar mensagem ao servidor.");
+            e.printStackTrace();
+            if (gui != null) SwingUtilities.invokeLater(() -> gui.setMensagemEspaco.setText("Erro ao enviar mensagem ao servidor."));
         }
     }
 
@@ -156,9 +171,12 @@ public class Client {
     public static void main(String[] args) {
         String serverIP = "localhost";
         int serverPort = Constants.SERVER_PORT;
-        String username = "Player2";
-        int teamId = 2;
+        String username = "Player" + (int)(Math.random()*1000);
+        int teamId = 1;
         int gameId = 1;
+        if (args.length >= 1) username = args[0];
+        if (args.length >= 2) teamId = Integer.parseInt(args[1]);
+        if (args.length >= 3) gameId = Integer.parseInt(args[2]);
         Client client = new Client(serverIP, serverPort, username, teamId, gameId);
         try {
             client.start();

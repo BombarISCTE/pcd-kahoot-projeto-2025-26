@@ -59,13 +59,13 @@ public class Server {
 
     public int generatePlayerId() { return playerIdCounter.getAndIncrement(); }
 
-    public void addGame(GameState game) { games.put(game.getGameCode(), game); }
+    public synchronized void addGame(GameState game) { games.put(game.getGameCode(), game); }
 
-    public void removeGame(int gameId) { games.remove(gameId); }
+    public synchronized void removeGame(int gameId) { games.remove(gameId); }
 
-    public GameState getGame(int gameId) { return games.get(gameId); }
+    public synchronized GameState getGame(int gameId) { return games.get(gameId); }
 
-    public void addTeam(int gameId, int teamId) {
+    public synchronized void addTeam(int gameId, int teamId) {
         GameState game = games.get(gameId);
         if (game == null) {
             throw new IllegalArgumentException("No game with code " + gameId);
@@ -73,7 +73,7 @@ public class Server {
         game.addTeam(teamId);
     }
 
-    public void listGames() {
+    public synchronized void listGames() {
         if (games.isEmpty()) {
             System.out.println("No active games.");
             return;
@@ -146,19 +146,32 @@ public class Server {
             playerInfos.add(new PlayerInfo(p.getName(), p.getTeamId(), p.getScore()));
         }
 
-        for (ClientHandler ch : ClientHandler.clientHandlers) {
-            if (ch.getGameId() == gameId) {
-                ch.sendMessage(new GameStartedWithPlayers(gameId, playerInfos));
+        synchronized (ClientHandler.clientHandlers) {
+            for (ClientHandler ch : ClientHandler.clientHandlers) {
+                if (ch.getGameId() == gameId) {
+                    ch.sendMessage(new GameStartedWithPlayers(gameId, playerInfos));
+                }
             }
         }
 
         // Start the first question (initializes timers/latches for current question)
         nextQuestion(gameId);
 
-        // Send the first question to all clients of the game
-        for (ClientHandler ch : ClientHandler.clientHandlers) {
-            if (ch.getGameId() == gameId) {
-                ch.sendNextQuestion();
+        // Send the first question to all clients of the game by creating the message once and broadcasting it
+        Object firstQuestionMsg = null;
+        if (game.getCurrentQuestion() instanceof IndividualQuestion) {
+            firstQuestionMsg = game.createSendIndividualQuestion();
+        } else if (game.getCurrentQuestion() instanceof TeamQuestion) {
+            firstQuestionMsg = game.createSendTeamQuestion();
+        }
+
+        if (firstQuestionMsg != null) {
+            synchronized (ClientHandler.clientHandlers) {
+                for (ClientHandler ch : ClientHandler.clientHandlers) {
+                    if (ch.getGameId() == gameId && ch.handlerRunning) {
+                        ch.sendMessage(firstQuestionMsg);
+                    }
+                }
             }
         }
     }

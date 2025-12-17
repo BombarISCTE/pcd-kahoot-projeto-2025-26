@@ -32,8 +32,7 @@ public class Records {
     public record GameStartedWithPlayers(int gameId, ArrayList<PlayerInfo> connectedPlayers) implements Serializable {}
 
 
-    public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores,
-                              Question nextQuestion) implements Serializable { }
+    public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores) implements Serializable { }
 
 
     public record SendQuestion(String question, String[] options, int questionNumber, int timeLimit) implements Serializable { }

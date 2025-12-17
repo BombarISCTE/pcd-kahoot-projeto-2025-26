@@ -189,7 +189,15 @@ public class GameState {
         if (questionTimer != null) questionTimer.cancel();
 
         boolean gameEnded = currentQuestionIndex >= questions.length;
-        return new RoundResult(true, gameEnded, getCurrentScores(), getCurrentQuestion());
+        return new RoundResult(true, gameEnded, getCurrentScores());
+    }
+
+    // Atomically check whether current question is complete and end the round if so.
+    // Returns the RoundResult if the round was ended by this call, or null otherwise.
+    public synchronized RoundResult tryEndRoundIfComplete() {
+        if (!isActive) return null;
+        if (!isCurrentQuestionComplete()) return null;
+        return endRound();
     }
 
     /* =========================

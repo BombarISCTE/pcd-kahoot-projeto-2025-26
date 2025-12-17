@@ -13,20 +13,20 @@ public class Player {
         this.teamId = teamId;
     }
 
-    public void addScore(int points) { this.score += points; }
+    public synchronized void addScore(int points) { this.score += points; }
 
-    public void setChosenOption(int chosenOption) { this.chosenOption = chosenOption; }
+    public synchronized void setChosenOption(int chosenOption) { this.chosenOption = chosenOption; }
 
-    public int getChosenOption() { return chosenOption; }
+    public synchronized int getChosenOption() { return chosenOption; }
 
-    public void resetChosenOption() { this.chosenOption = -1; }
+    public synchronized void resetChosenOption() { this.chosenOption = -1; }
 
     public int getTeamId() { return teamId; }
 
-    public int getScore() { return score; }
+    public synchronized int getScore() { return score; }
 
-    public void setResponseOrder(int order) { this.responseOrder = order; } //precisamos de saber os 2 primeiros para atribuir bónus
-    public int getResponseOrder() { return responseOrder; }
+    public synchronized void setResponseOrder(int order) { this.responseOrder = order; } //precisamos de saber os 2 primeiros para atribuir bónus
+    public synchronized int getResponseOrder() { return responseOrder; }
 
     public String getName() { return name; }
 

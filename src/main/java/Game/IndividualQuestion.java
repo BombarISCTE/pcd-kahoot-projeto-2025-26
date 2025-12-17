@@ -42,9 +42,9 @@ public class IndividualQuestion extends Question {
 
     public StringBuilder formatedClassName(){return new StringBuilder("Pergunta Individual: ");}
 
-    public int getTotalPlayers() {return totalPlayers;}
+    public synchronized int getTotalPlayers() {return totalPlayers;}
 
-    public void setTotalPlayers(int totalPlayers) {
+    public synchronized void setTotalPlayers(int totalPlayers) {
         if (totalPlayers < 1) {
             throw new IllegalArgumentException("O número total de jogadores deve ser pelo menos 1.");
         }
@@ -54,8 +54,8 @@ public class IndividualQuestion extends Question {
 
 
 
-    public ArrayList<Player> getAnsweredPlayers() {
-        return answeredPlayers;
+    public synchronized ArrayList<Player> getAnsweredPlayers() {
+        return new ArrayList<>(answeredPlayers);
     }
 
     public void setCountdownLatch(ModifiedCountdownLatch latch) {
@@ -74,6 +74,6 @@ public class IndividualQuestion extends Question {
         );
     }
 
-    public ModifiedCountdownLatch getCountdownLatch() {return countdownLatch;}
+    public synchronized ModifiedCountdownLatch getCountdownLatch() {return countdownLatch;}
 
 }

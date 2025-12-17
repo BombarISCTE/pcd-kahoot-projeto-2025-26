@@ -22,6 +22,7 @@ public class ClientGUI extends JFrame {
 
     public ClientGUI(Client client) {
         this.client = client;
+        System.out.println("ClientGUI - creating GUI for client: " + client.getUsername());
         initGUI();
     }
 
@@ -107,10 +108,12 @@ public class ClientGUI extends JFrame {
     }
 
     public void mostrarNovaPergunta(SendTeamQuestion question) {
+        System.out.println("ClientGUI - mostrarNovaPergunta (team) questionNumber=" + question.questionNumber());
         mostrarPerguntaGenerica(question.question(), question.options(), question.questionNumber(), question.timeLimit());
     }
 
     public void mostrarNovaPergunta(SendIndividualQuestion question) {
+        System.out.println("ClientGUI - mostrarNovaPergunta (individual) questionNumber=" + question.questionNumber());
         mostrarPerguntaGenerica(question.question(), question.options(), question.questionNumber(), question.timeLimit());
     }
 
