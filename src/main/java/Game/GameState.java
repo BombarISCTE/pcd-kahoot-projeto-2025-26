@@ -52,6 +52,14 @@ public class GameState {
 
     public synchronized int getGameCode() {return gameCode;}
 
+    public synchronized ArrayList<Player> getAllPlayers() {
+        ArrayList<Player> players = new ArrayList<>();
+        for (Team team : teamsMap.values()) {
+            players.addAll(team.getPlayers());
+        }
+        return players;
+    }
+
     /* =========================
        QUESTIONS
        ========================= */
@@ -229,7 +237,7 @@ public class GameState {
        SEND OBJECTS
        ========================= */
 
-    public SendIndividualQuestion createSendIndividualQuestion() {
+    public synchronized SendIndividualQuestion createSendIndividualQuestion() {
         if (!(getCurrentQuestion() instanceof IndividualQuestion iq)) return null;
         return new SendIndividualQuestion(
                 iq.getQuestionText(),
@@ -239,7 +247,7 @@ public class GameState {
         );
     }
 
-    public SendTeamQuestion createSendTeamQuestion() {
+    public synchronized SendTeamQuestion createSendTeamQuestion() {
         if (!(getCurrentQuestion() instanceof TeamQuestion tq)) return null;
         return new SendTeamQuestion(
                 tq.getQuestionText(),
@@ -249,7 +257,7 @@ public class GameState {
         );
     }
 
-    public SendFinalScores getFinalScores() {
+    public synchronized SendFinalScores getFinalScores() {
         return new SendFinalScores(getCurrentScores());
     }
 }

@@ -1,6 +1,5 @@
 package Client;
 
-import Game.Player;
 import Utils.Records.*;
 
 import javax.swing.*;
@@ -15,6 +14,7 @@ public class ClientGUI extends JFrame {
     private JButton[] opcoesBotoes = new JButton[4];
     private JLabel[] playerScoreLabels;
     private final Client client;
+    private ArrayList<Utils.Records.PlayerInfo> playerInfos = new ArrayList<>();
 
     private int currentQuestionNumber = -1;
     private Timer countdownTimer;
@@ -79,14 +79,25 @@ public class ClientGUI extends JFrame {
         }
     }
 
-    // Atualiza lista de jogadores e cria labels
-    public void setConnectedPlayers(ArrayList<Player> players) {
-        JPanel placarPontos = new JPanel(new GridLayout(players.size(), 1, 5, 5));
+    // Atualiza lista de jogadores e cria labels a partir dos nomes (strings)
+    public void setConnectedPlayers(ArrayList<Utils.Records.PlayerInfo> players) {
+        this.playerInfos = new ArrayList<>(players);
+        rebuildPlayerList();
+    }
+
+    public void addPlayer(Utils.Records.PlayerInfo p) {
+        this.playerInfos.add(p);
+        rebuildPlayerList();
+    }
+
+    private void rebuildPlayerList() {
+        JPanel placarPontos = new JPanel(new GridLayout(playerInfos.size(), 1, 5, 5));
         placarPontos.setBorder(BorderFactory.createTitledBorder("Pontos"));
 
-        playerScoreLabels = new JLabel[players.size()];
-        for (int i = 0; i < players.size(); i++) {
-            playerScoreLabels[i] = new JLabel(players.get(i).getName() + "T" + players.get(i).getTeamId()+ ": " + players.get(i).getScore());
+        playerScoreLabels = new JLabel[playerInfos.size()];
+        for (int i = 0; i < playerInfos.size(); i++) {
+            Utils.Records.PlayerInfo pi = playerInfos.get(i);
+            playerScoreLabels[i] = new JLabel(pi.name() + " (T" + pi.teamId() + "): " + pi.score() + " pontos");
             placarPontos.add(playerScoreLabels[i]);
         }
 
@@ -151,6 +162,4 @@ public class ClientGUI extends JFrame {
 
     public void setSetMensagemEspaco(String msg) {
         setMensagemEspaco.setText(msg);}
-
-
 }

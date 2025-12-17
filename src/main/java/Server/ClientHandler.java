@@ -6,7 +6,7 @@ import Utils.Records.*;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ClientHandler extends Thread {
 
@@ -20,7 +20,8 @@ public class ClientHandler extends Thread {
     private int gameId = -1;
     private GameState gameState;
 
-    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
+    // Use a thread-safe list to avoid ConcurrentModificationException while iterating
+    public static final CopyOnWriteArrayList<ClientHandler> clientHandlers = new CopyOnWriteArrayList<>();
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -31,9 +32,7 @@ public class ClientHandler extends Thread {
             this.objectOutputStream.flush();
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
 
-            synchronized (clientHandlers) {
-                clientHandlers.add(this);
-            }
+            clientHandlers.add(this);
 
         } catch (IOException e) {
             System.err.println("CH constructor - Erro ao criar streams: " + e.getMessage());
@@ -65,8 +64,22 @@ public class ClientHandler extends Thread {
         this.clientConnected = connect;
         this.gameId = connect.gameId();
         GameState gameState = server.getGame(gameId);
+        this.gameState = gameState;
 
-        // Adiciona jogador à equipa
+        if (gameState == null) {
+            sendMessage(new FatalErrorMessage("Game not found"));
+            closeEverything();
+            return;
+        }
+
+        // Reject if the game has already started
+        if (gameState.isActive()) {
+            sendMessage(new refuseConnection("Game already started"));
+            closeEverything();
+            return;
+        }
+
+        // Adiciona jogador à equipa (create team if missing)
         Team team = gameState.getTeam(connect.teamId());
         if (team == null) {
             server.addTeam(gameId, connect.teamId());
@@ -76,13 +89,15 @@ public class ClientHandler extends Thread {
         team.addPlayer(player);
 
         // Envia apenas aos outros clientes do jogo
-        synchronized (ClientHandler.clientHandlers) {
-            for (ClientHandler ch : ClientHandler.clientHandlers) {
-                if (ch != this && ch.gameId == gameId && ch.handlerRunning) {
-                    ch.sendMessage(new NewPlayerConnected(connect.username(), connect.teamId()));
-                }
+        for (ClientHandler ch : clientHandlers) {
+            if (ch != this && ch.gameId == gameId && ch.handlerRunning) {
+                Utils.Records.PlayerInfo pi = new Utils.Records.PlayerInfo(connect.username(), connect.teamId(), 0);
+                ch.sendMessage(new Utils.Records.NewPlayerConnected(pi));
             }
         }
+
+        // Do NOT broadcast full players list here. The server will send the authoritative
+        // players list once when the game is started (Server.startGame).
     }
 
     private void listenLoop() { //todo ver se este metodo certo
@@ -133,14 +148,12 @@ public class ClientHandler extends Thread {
         if (current == null) return;
 
         // Envia GUI para todos os clientes do jogo
-        synchronized (clientHandlers) {
-            for (ClientHandler ch : clientHandlers) {
-                if (ch.handlerRunning && ch.gameId == gameId) {
-                    if (current instanceof IndividualQuestion) {
-                        ch.sendMessage(gameState.createSendIndividualQuestion());
-                    } else if (current instanceof TeamQuestion) {
-                        ch.sendMessage(gameState.createSendTeamQuestion());
-                    }
+        for (ClientHandler ch : clientHandlers) {
+            if (ch.handlerRunning && ch.gameId == gameId) {
+                if (current instanceof IndividualQuestion) {
+                    ch.sendMessage(gameState.createSendIndividualQuestion());
+                } else if (current instanceof TeamQuestion) {
+                    ch.sendMessage(gameState.createSendTeamQuestion());
                 }
             }
         }
@@ -149,10 +162,8 @@ public class ClientHandler extends Thread {
     }
 
     public void broadcastMessage(Object message, int gameId) {
-        synchronized (clientHandlers) {
-            for (ClientHandler ch : clientHandlers) {
-                if (ch.handlerRunning && ch.gameId == gameId) ch.sendMessage(message);
-            }
+        for (ClientHandler ch : clientHandlers) {
+            if (ch.handlerRunning && ch.gameId == gameId) ch.sendMessage(message);
         }
     }
 
@@ -165,22 +176,11 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void broadcastConnectedPlayers() {
-        if (gameState == null) return;
-
-        ArrayList<String> connected = new ArrayList<>();
-        for (Team t : gameState.getTeams()) {
-            for (Player p : t.getPlayers()) connected.add(p.getName());
-        }
-
-        broadcastMessage(new ClientConnectAck("Server", gameId, connected), gameId);
-    }
-
     public void closeEverything() {
         if (!handlerRunning) return;
         handlerRunning = false;
 
-        synchronized (clientHandlers) { clientHandlers.remove(this); }
+        clientHandlers.remove(this);
 
         System.out.println("CH closeEverything - Fechando conexão para: " +
                 (clientConnected != null ? clientConnected.username() : "unknown"));
@@ -188,7 +188,7 @@ public class ClientHandler extends Thread {
         if (clientConnected != null && gameState != null) {
             Team team = gameState.getTeam(clientConnected.teamId());
             if (team != null) team.getPlayers().removeIf(p -> p.getName().equals(clientConnected.username()));
-            broadcastConnectedPlayers();
+            // Do NOT broadcast full players list on disconnect; list is sent only on game start.
         }
 
         try {

@@ -67,7 +67,7 @@ public class Server {
 
     public void addTeam(int gameId, int teamId) {
         GameState game = games.get(gameId);
-        if(game == null) {
+        if (game == null) {
             throw new IllegalArgumentException("No game with code " + gameId);
         }
         game.addTeam(teamId);
@@ -139,6 +139,28 @@ public class Server {
         game.setActive(true);
 
         System.out.println("[Server] Game " + gameId + " successfully initialized and ready to start.");
+
+        // Broadcast GameStartedWithPlayers using PlayerInfo
+        ArrayList<PlayerInfo> playerInfos = new ArrayList<>();
+        for (Player p : game.getAllPlayers()) {
+            playerInfos.add(new PlayerInfo(p.getName(), p.getTeamId(), p.getScore()));
+        }
+
+        for (ClientHandler ch : ClientHandler.clientHandlers) {
+            if (ch.getGameId() == gameId) {
+                ch.sendMessage(new GameStartedWithPlayers(gameId, playerInfos));
+            }
+        }
+
+        // Start the first question (initializes timers/latches for current question)
+        nextQuestion(gameId);
+
+        // Send the first question to all clients of the game
+        for (ClientHandler ch : ClientHandler.clientHandlers) {
+            if (ch.getGameId() == gameId) {
+                ch.sendNextQuestion();
+            }
+        }
     }
 
 

@@ -2,9 +2,13 @@ package Client;
 
 import Utils.Constants;
 import Utils.Records.*;
+import Utils.Records.SendAnswer;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Client {
 
@@ -38,15 +42,16 @@ public class Client {
         outputStream.flush();
         inputStream = new ObjectInputStream(socket.getInputStream());
 
-        gui = new ClientGUI(this);
+        // GUI is created only after server signals GameStartedWithPlayers
+        // gui = new ClientGUI(this);
 
-        new Thread(()-> messageHandler()).start();
+        new Thread(this::listenLoop).start();
 
         // Envia handshake inicial para conectar ao servidor
-        sendMessage(new ClientConnect(username, gameId, teamId)); // gameId e teamId serão atualizados pelo servidor
+        sendMessage(new ClientConnect(username, gameId, teamId));
     }
 
-    private void messageHandler() {
+    private void listenLoop() {
         try {
             while (true) {
                 Object obj = inputStream.readObject();
@@ -55,44 +60,79 @@ public class Client {
                 switch (obj.getClass().getSimpleName()) {
                     case "ClientConnectAck" -> {
                         ClientConnectAck ack = (ClientConnectAck) obj;
-                        ///gui.setConnectedPlayers(ack.connectedPlayers());
+                        if (gui != null) {
+                            gui.setConnectedPlayers(ack.connectedPlayers());
+                        } else {
+                            // GUI not created yet; ignore lobby ack – server will send GameStartedWithPlayers on start
+                        }
                     }
-                    case "GameStarted" -> {
-                        GameStarted gs = (GameStarted) obj;
-                        gui = new ClientGUI(this);
-                        gui.setConnectedPlayers(gs.connectedPlayers());
+                    case "NewPlayerConnected" -> {
+                        NewPlayerConnected npc = (NewPlayerConnected) obj;
+                        if (gui != null) {
+                            gui.addPlayer(npc.player());
+                        } else {
+                            // GUI not created yet; ignore – will receive authoritative list at GameStartedWithPlayers
+                        }
                     }
                     case "SendIndividualQuestion" -> {
-                        gui.mostrarNovaPergunta((SendIndividualQuestion) obj);
+                        if (gui != null) gui.mostrarNovaPergunta((SendIndividualQuestion) obj);
+                        else System.out.println("Received SendIndividualQuestion before GUI creation; ignoring.");
                     }
                     case "SendTeamQuestion" -> {
-                        gui.mostrarNovaPergunta((SendTeamQuestion) obj);
+                        if (gui != null) gui.mostrarNovaPergunta((SendTeamQuestion) obj);
+                        else System.out.println("Received SendTeamQuestion before GUI creation; ignoring.");
                     }
                     case "SendRoundStats" -> {
                         SendRoundStats stats = (SendRoundStats) obj;
-                        gui.atualizarPlacar(stats.playerScores());
+                        if (gui != null) gui.atualizarPlacar(stats.playerScores());
+                        else System.out.println("Received SendRoundStats before GUI creation; ignoring.");
                     }
                     case "SendFinalScores" -> {
                         SendFinalScores finalScores = (SendFinalScores) obj;
-                        gui.gameEnded(finalScores.finalScores());
+                        if (gui != null) gui.gameEnded(finalScores.finalScores());
+                        else System.out.println("Received SendFinalScores before GUI creation; ignoring.");
                     }
                     case "GameEnded" -> {
-                        gui.setMensagemEspaco.setText("Jogo terminado pelo servidor!");
-                        gui.setOptionsEnabled(false);
+                        if (gui != null) {
+                            gui.setMensagemEspaco.setText("Jogo terminado pelo servidor!");
+                            gui.setOptionsEnabled(false);
+                        } else System.out.println("Received GameEnded before GUI creation.");
                     }
                     case "ErrorMessage" -> {
-                        gui.setMensagemEspaco.setText("Erro: " + ((ErrorMessage) obj).message());
+                        ErrorMessage em = (ErrorMessage) obj;
+                        if (gui != null) gui.setMensagemEspaco.setText("Erro: " + em.message());
+                        else System.out.println("Server error: " + em.message());
                     }
                     case "FatalErrorMessage" -> {
-                        gui.setMensagemEspaco.setText("Erro fatal: " + ((FatalErrorMessage) obj).message());
+                        FatalErrorMessage fm = (FatalErrorMessage) obj;
+                        if (gui != null) gui.setMensagemEspaco.setText("Erro fatal: " + fm.message());
+                        else System.out.println("Fatal error from server: " + fm.message());
                         closeEverything();
                         return;
+                    }
+                    case "refuseConnection" -> {
+                        Utils.Records.refuseConnection rc = (Utils.Records.refuseConnection) obj;
+                        // show message to user and close
+                        if (gui != null) gui.setMensagemEspaco.setText("Conexão recusada: " + rc.reason());
+                        else System.out.println("Conexão recusada: " + rc.reason());
+                        closeEverything();
+                        return;
+                    }
+                    case "GameStartedWithPlayers" -> {
+                        GameStartedWithPlayers gs = (GameStartedWithPlayers) obj;
+                        // create GUI now and populate player list
+                        if (gui == null) {
+                            gui = new ClientGUI(this);
+                        }
+                        if (gs.connectedPlayers() != null) {
+                            gui.setConnectedPlayers(gs.connectedPlayers());
+                        }
                     }
                     default -> System.out.println("Cliente recebeu mensagem desconhecida: " + obj.getClass().getName());
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
-            gui.setMensagemEspaco.setText("Conexão perdida com o servidor.");
+            if (gui != null) gui.setMensagemEspaco.setText("Conexão perdida com o servidor.");
         }
     }
 
@@ -116,7 +156,7 @@ public class Client {
     public static void main(String[] args) {
         String serverIP = "localhost";
         int serverPort = Constants.SERVER_PORT;
-        String username = "Player1";
+        String username = "Player2";
         int teamId = 2;
         int gameId = 1;
         Client client = new Client(serverIP, serverPort, username, teamId, gameId);

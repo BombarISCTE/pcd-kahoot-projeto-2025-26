@@ -1,6 +1,5 @@
 package Utils;
 
-import Game.Player;
 import Game.Question;
 
 import java.io.Serializable;
@@ -17,30 +16,20 @@ public class Records {
     public record SendAnswer( String username,int selectedOption, int questionNumber) implements Serializable {
     }
 
+    // PlayerInfo record to transfer minimal player state without serializing Game.Player
+    public record PlayerInfo(String name, int teamId, int score) implements Serializable {}
 
-    public record ClientConnectAck(String username, int gameId, ArrayList<String> connectedPlayers) implements Serializable {
+    public record ClientConnectAck(String username, int gameId, ArrayList<PlayerInfo> connectedPlayers) implements Serializable {
     }
 
-//    public record GameStarted implements Serializable {
-//        private final int gameId;
-//
-//        public GameStarted(int gameId) {this.gameId = gameId;}
-//
-//        public int getGameId() { return gameId; }
-//    }
-//
-//    public record GameEnded implements Serializable {
-//        private final int gameId;
-//
-//        public GameEnded(int gameId) { this.gameId = gameId; }
-//
-//        public int getGameId() { return gameId; }
-//    }
+    // Notify other clients in the lobby that a new player joined
+    public record NewPlayerConnected(PlayerInfo player) implements Serializable {}
 
-    public record GameStarted(int gameId, ArrayList<Player> connectedPlayers) implements Serializable {}
+
+    public record GameStarted(int gameId) implements Serializable {}
     public record GameEnded(int gameId) implements Serializable {}
 
-    public record NewPlayerConnected(String username, int teamId) implements Serializable {}
+    public record GameStartedWithPlayers(int gameId, ArrayList<PlayerInfo> connectedPlayers) implements Serializable {}
 
 
     public record RoundResult(boolean roundEnded, boolean gameEnded, HashMap<String, Integer> playerScores,
