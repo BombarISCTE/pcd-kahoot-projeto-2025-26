@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class ClientGUI extends JFrame {
 
@@ -149,11 +150,24 @@ public class ClientGUI extends JFrame {
     public void atualizarPlacar(HashMap<String, Integer> scores) {
         if (playerScoreLabels == null) return;
         for (int i = 0; i < playerScoreLabels.length; i++) {
-            String playerName = playerScoreLabels[i].getText().split(":")[0];
-            if (scores.containsKey(playerName)) {
-                playerScoreLabels[i].setText(playerName + ": " + scores.get(playerName) + " pontos");
-            }
+            String playerName = playerInfos.get(i).name();
+            int score = scores.getOrDefault(playerName, 0);
+            playerScoreLabels[i].setText(playerName + " (T" + playerInfos.get(i).teamId() + "): " + score + " pontos");
         }
+    }
+
+    public void showRoundStats(HashMap<String, Integer> scores) {
+        // Build a simple sorted stats string
+        StringBuilder sb = new StringBuilder();
+        sb.append("Round stats:\n");
+        playerInfos.stream()
+                .map(pi -> Map.entry(pi.name(), scores.getOrDefault(pi.name(), 0)))
+                .sorted((a,b) -> Integer.compare(b.getValue(), a.getValue()))
+                .forEach(e -> sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n"));
+
+        // show dialog on EDT
+        JOptionPane.showMessageDialog(this, sb.toString(), "Round Statistics", JOptionPane.INFORMATION_MESSAGE);
+        setMensagemEspaco.setText("Round ended — scores updated.");
     }
 
     public void gameEnded(HashMap<String, Integer> finalScores) {

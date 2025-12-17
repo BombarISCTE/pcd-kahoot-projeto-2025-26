@@ -79,6 +79,8 @@ public class TeamQuestion extends Question {
         if (peloMenosUmAcertou) {score = todosAcertaram ? points * Constants.BONUS_FACTOR : points;}
 
         for (Player p : players) {p.addScore(score);}
+        // Reset chosenOption for next question
+        for (Player p : players) { p.resetChosenOption(); }
     }
 
 

@@ -38,6 +38,12 @@ public class IndividualQuestion extends Question {
             totalScore += score;
         }
         for (Player p : players) {p.addScore(totalScore);}
+        // Reset chosen option and response order for next question
+        for (Player p : players) {
+            p.resetChosenOption();
+            p.setResponseOrder(-1);
+        }
+        answeredPlayers.clear();
     }
 
     public StringBuilder formatedClassName(){return new StringBuilder("Pergunta Individual: ");}

@@ -23,8 +23,10 @@ public class GameState {
     private boolean isActive = false;
 
     private final AtomicInteger responseCounter = new AtomicInteger(0);
+    private final AtomicInteger playerCounter = new AtomicInteger(1);
     private ModifiedCountdownLatch countdownLatch;
     private Timer questionTimer;
+    private Runnable roundTimeoutCallback = null;
 
     public GameState(int numTeams, int playersPerTeam, int gameCode) {
         this.numTeams = numTeams;
@@ -127,10 +129,18 @@ public class GameState {
                 } else if (current instanceof TeamQuestion tq) {
                     tq.getBarrier().tempoExpirado();
                 }
+                // notify external listener (server) that the time expired
+                if (roundTimeoutCallback != null) {
+                    try { roundTimeoutCallback.run(); } catch (Exception e) { e.printStackTrace(); }
+                }
             }
         }, Constants.QUESTION_TIME_LIMIT * 1000);
     }
 
+    // Called by server to set a callback to be invoked when the question's time expires
+    public synchronized void setRoundTimeoutCallback(Runnable callback) {
+        this.roundTimeoutCallback = callback;
+    }
 
     /* =========================
        REGISTER ANSWER
@@ -155,7 +165,9 @@ public class GameState {
                     int base = (option == iq.getCorrect()) ? iq.getPoints() : 0;
                     if (order <= 2 && base > 0) base *= Constants.BONUS_FACTOR;
 
-                    p.addScore(base);
+                    // Score will be computed at end of round (processResponses); only decrement latch here
+                    // register answer in question (to capture answeredPlayers order)
+                    iq.registerAnswer(p, option);
                     countdownLatch.countDown();
                 }
 
@@ -177,10 +189,22 @@ public class GameState {
         Question current = getCurrentQuestion();
         if (current == null) return null;
 
+        // First, ensure any synchronization primitives have completed (barrier/latch handled elsewhere)
         if (current instanceof TeamQuestion tq) {
             try {
                 tq.getBarrier().await();
             } catch (InterruptedException ignored) {}
+            // Process team responses for each team
+            for (Team t : teamsMap.values()) {
+                tq.processResponses(t);
+            }
+        }
+
+        if (current instanceof IndividualQuestion iq) {
+            // For individual question, aggregate and process responses per team
+            for (Team t : teamsMap.values()) {
+                iq.processResponses(t);
+            }
         }
 
         responseCounter.set(0);
@@ -198,6 +222,11 @@ public class GameState {
         if (!isActive) return null;
         if (!isCurrentQuestionComplete()) return null;
         return endRound();
+    }
+
+    // Assign a unique player name for this game (Player1, Player2, ...)
+    public synchronized String assignNextPlayerName() {
+        return "Player" + playerCounter.getAndIncrement();
     }
 
     /* =========================

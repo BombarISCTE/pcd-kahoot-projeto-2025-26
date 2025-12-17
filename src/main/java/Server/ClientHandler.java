@@ -68,11 +68,10 @@ public class ClientHandler extends Thread {
         Object firstMsg = objectInputStream.readObject();
         if (!(firstMsg instanceof ClientConnect connect)) return;
 
-        this.clientConnected = connect;
         this.gameId = connect.gameId();
         GameState gameState = server.getGame(gameId);
         this.gameState = gameState;
-        System.out.println("CH handleClientConnect - handshake completed: username=" + connect.username() + " teamId=" + connect.teamId() + " gameId=" + connect.gameId() + " from " + socket.getRemoteSocketAddress());
+        System.out.println("CH handleClientConnect - handshake received (requested username=" + connect.username() + ", teamId=" + connect.teamId() + ", gameId=" + connect.gameId() + ") from " + socket.getRemoteSocketAddress());
 
         if (gameState == null) {
             sendMessage(new FatalErrorMessage("Game not found"));
@@ -80,34 +79,46 @@ public class ClientHandler extends Thread {
             return;
         }
 
-        // Reject if the game has already started
-        if (gameState.isActive()) {
-            sendMessage(new refuseConnection("Game already started"));
-            closeEverything();
-            return;
-        }
+        // Assign a server-controlled player name that is unique within the game (Player1, Player2, ...)
+        String assignedName;
+        synchronized (gameState) {
+            assignedName = gameState.assignNextPlayerName();
 
-        // Adiciona jogador à equipa (create team if missing)
-        Team team = gameState.getTeam(connect.teamId());
-        if (team == null) {
-            server.addTeam(gameId, connect.teamId());
-            team = gameState.getTeam(connect.teamId());
-        }
-        Player player = new Player(connect.username(), connect.teamId());
-        team.addPlayer(player);
+            // send assignment to client
+            sendMessage(new AssignedName(assignedName));
 
-        // Envia apenas aos outros clientes do jogo
-        synchronized (clientHandlers) {
-            for (ClientHandler ch : clientHandlers) {
-                if (ch != this && ch.gameId == gameId && ch.handlerRunning) {
-                    Utils.Records.PlayerInfo pi = new Utils.Records.PlayerInfo(connect.username(), connect.teamId(), 0);
-                    ch.sendMessage(new Utils.Records.NewPlayerConnected(pi));
-                }
+            // update clientConnected to the assigned name for server-side bookkeeping
+            connect = new ClientConnect(assignedName, connect.gameId(), connect.teamId());
+            this.clientConnected = connect;
+
+            System.out.println("CH handleClientConnect - assigned name " + assignedName + " for connection from " + socket.getRemoteSocketAddress());
+
+            // Reject if the game has already started
+            if (gameState.isActive()) {
+                sendMessage(new refuseConnection("Game already started"));
+                closeEverything();
+                return;
+            }
+
+            // Ensure team exists and attempt to add player
+            Team team = gameState.getTeam(connect.teamId());
+            if (team == null) {
+                server.addTeam(gameId, connect.teamId());
+                team = gameState.getTeam(connect.teamId());
+            }
+            Player player = new Player(connect.username(), connect.teamId());
+            int before = team.getCurrentSize();
+            team.addPlayer(player);
+            int after = team.getCurrentSize();
+            if (after == before) {
+                // team was full; inform client and close
+                sendMessage(new refuseConnection("Team " + connect.teamId() + " is full"));
+                closeEverything();
+                return;
             }
         }
 
-        // Do NOT broadcast full players list here. The server will send the authoritative
-        // players list once when the game is started (Server.startGame).
+        // clientConnected and team population done inside synchronized(gameState) block above
     }
 
     private void listenLoop() { //todo ver se este metodo certo
@@ -146,6 +157,8 @@ public class ClientHandler extends Thread {
 
             if (!result.gameEnded()) {
                 // Broadcast next question to all clients
+                // Initialize next question (timers/latches) and then send it
+                gameState.startCurrentQuestion();
                 Question next = gameState.getCurrentQuestion();
                 Object nextMsg = null;
                 if (next instanceof IndividualQuestion) nextMsg = gameState.createSendIndividualQuestion();
@@ -195,7 +208,8 @@ public class ClientHandler extends Thread {
             if (ch == null) continue;
             if (!ch.handlerRunning || ch.gameId != gameId) continue;
             if (ch.clientConnected == null) continue;
-            System.out.println("CH broadcastMessage - sending to id=" + ch.handlerId + " user=" + ch.clientConnected.username() + " game=" + gameId + " msgType=" + message.getClass().getSimpleName());
+            // simplified log per user request
+            System.out.println("sending " + message.getClass().getSimpleName() + " to " + ch.clientConnected.username() + " in game " + gameId);
             ch.sendMessage(message);
         }
         System.out.println("CH broadcastMessage - broadcast completed for game " + gameId);

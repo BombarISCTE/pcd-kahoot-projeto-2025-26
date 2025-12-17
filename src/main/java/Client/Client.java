@@ -16,7 +16,7 @@ public class Client {
 
     private final String serverIP;
     private final int serverPort;
-    private final String username;
+    private String username;
     private int teamId; //wants to belong to
     private int gameId; //wants to join
     private Socket socket;
@@ -37,6 +37,8 @@ public class Client {
     public String getUsername() {
         return username;
     }
+
+    public void setUsername(String username) { this.username = username; }
 
     public void start() throws IOException {
         socket = new Socket(serverIP, serverPort);
@@ -62,6 +64,11 @@ public class Client {
                 System.out.println("Client: received message -> " + obj.getClass().getSimpleName());
 
                 switch (obj.getClass().getSimpleName()) {
+                    case "AssignedName" -> {
+                        AssignedName an = (AssignedName) obj;
+                        System.out.println("Client: assigned name from server -> " + an.assignedName());
+                        setUsername(an.assignedName());
+                    }
                     case "ClientConnectAck" -> {
                         ClientConnectAck ack = (ClientConnectAck) obj;
                         if (gui != null) {
@@ -92,9 +99,21 @@ public class Client {
                         if (gui != null) SwingUtilities.invokeLater(() -> gui.atualizarPlacar(stats.playerScores()));
                         else System.out.println("Received SendRoundStats before GUI creation; ignoring.");
                     }
+                    case "RoundResult" -> {
+                        RoundResult rr = (RoundResult) obj;
+                        if (gui != null) SwingUtilities.invokeLater(() -> {
+                            gui.atualizarPlacar(rr.playerScores());
+                            gui.setMensagemEspaco.setText("Round ended — scores updated.");
+                        });
+                        else System.out.println("Received RoundResult before GUI creation; ignoring.");
+                    }
                     case "SendFinalScores" -> {
                         SendFinalScores finalScores = (SendFinalScores) obj;
-                        if (gui != null) SwingUtilities.invokeLater(() -> gui.gameEnded(finalScores.finalScores()));
+                        if (gui != null) SwingUtilities.invokeLater(() -> {
+                            gui.atualizarPlacar(finalScores.finalScores());
+                            gui.showRoundStats(finalScores.finalScores()); // popup for final stats
+                            gui.gameEnded(finalScores.finalScores());
+                        });
                         else System.out.println("Received SendFinalScores before GUI creation; ignoring.");
                     }
                     case "GameEnded" -> {
