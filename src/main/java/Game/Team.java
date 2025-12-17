@@ -3,16 +3,15 @@ package Game;
 import java.util.ArrayList;
 
 public class Team {
-    private final String name;
+
     private final int teamId;
     private final int maxPlayersPerTeam;
     private final ArrayList<Player> players;
 
-    public Team(String name, int teamId, int maxPlayersPerTeam) {
+    public Team(int teamId, int maxPlayersPerTeam) {
         if (maxPlayersPerTeam < 1) {
             throw new IllegalArgumentException("Uma equipa deve ter pelo menos 1 jogador.");
         }
-        this.name = name;
         this.teamId = teamId;
         this.maxPlayersPerTeam = maxPlayersPerTeam;
         this.players = new ArrayList<>();
@@ -53,14 +52,13 @@ public class Team {
     // Número atual de jogadores
     public synchronized int getCurrentSize() {return players.size();}
 
-    public String getName() {return name;}
+
 
     public int getTeamId() {return teamId;}
 
     @Override
     public synchronized String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Team ").append(name).append(" (ID: ").append(teamId).append(")\n");
         sb.append("Players (").append(players.size()).append("/").append(maxPlayersPerTeam).append("):\n");
         for (int i = 0; i < players.size(); i++) {
             sb.append(" - ").append(players.get(i)).append("\n");

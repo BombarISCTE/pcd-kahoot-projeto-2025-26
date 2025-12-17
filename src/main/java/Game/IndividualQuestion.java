@@ -41,6 +41,8 @@ public class IndividualQuestion extends Question {
         for (Player p : players) {p.addScore(totalScore);}
     }
 
+    public StringBuilder formatedClassName(){return new StringBuilder("Pergunta Individual: ");}
+
 
 
 

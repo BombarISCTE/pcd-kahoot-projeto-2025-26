@@ -29,24 +29,25 @@ public class FormatQuestions {
      */
     public static void txtTrimmer(String inputFilePath, String outputFilePath) throws IOException {
         StringBuilder sb = new StringBuilder();
+        // 1. Ler tudo para uma única String
         try (BufferedReader br = new BufferedReader(new FileReader(inputFilePath))) {
             String line;
             while ((line = br.readLine()) != null) {
                 sb.append(line).append("\n");
             }
         }
-
         String json = sb.toString();
 
-        // Limpar keys com espaços
+        // 2. Limpar keys com espaços: "  question  " -> "question"
         json = json.replaceAll("\"\\s*(.*?)\\s*\"\\s*:", "\"$1\":");
 
-        // Limpar valores string
+        // 3. Limpar valores string: "  Resposta  " -> "Resposta"
         json = json.replaceAll(":\\s*\"\\s*(.*?)\\s*\"", ": \"$1\"");
 
-        // Limpar strings dentro de arrays
+        // 4. Limpar strings dentro de arrays: "   Valor   " -> "Valor"
         json = json.replaceAll("\"\\s+(.*?)\\s+\"", "\"$1\"");
 
+        // 5. Guardar o JSON limpo
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
             bw.write(json);
         }

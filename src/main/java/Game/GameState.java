@@ -16,7 +16,7 @@ public class GameState {
     private final int gameCode;
     private final int numTeams;
     private final int playersPerTeam;
-    private final HashMap<Integer, Team> teamsMap;
+    private final HashMap<Integer, Team> teamsMap; // teamId -> Team
 
     private Question[] questions;
     private int currentQuestionIndex = 0;
@@ -35,9 +35,9 @@ public class GameState {
     }
 
     // --- Teams ---
-    public void addTeam(int teamId, String teamName) {
+    public void addTeam(int teamId) {
         if (teamsMap.containsKey(teamId)) throw new IllegalArgumentException("Team exists: " + teamId);
-        teamsMap.put(teamId, new Team(teamName, teamId, playersPerTeam));
+        teamsMap.put(teamId, new Team(teamId, playersPerTeam));
     }
 
     public Team getTeam(int teamId) { return teamsMap.get(teamId); }
@@ -46,6 +46,7 @@ public class GameState {
 
     // --- Questions ---
     public void setQuestions(Question[] questions) { this.questions = questions; }
+
     public Question getCurrentQuestion() {
         if (questions == null || currentQuestionIndex >= questions.length) return null;
         return questions[currentQuestionIndex];

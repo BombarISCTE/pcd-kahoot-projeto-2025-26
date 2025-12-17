@@ -62,4 +62,6 @@ public class TeamQuestion extends Question {
         return barrier;
     }
     public void setBarrier(ModifiedBarrier barrier) {this.barrier = barrier;}
+
+    public StringBuilder formatedClassName(){return new StringBuilder("Pergunta de Equipa: ");}
 }

@@ -82,7 +82,11 @@ public class TUI {
 
             if (!fileName.isEmpty()) {
                 String path = "src/main/resources/Perguntas/" + fileName;
-                Question[] perguntas = Utils.FormatQuestions.readQuestions(path);
+                String jsonPath = Utils.FormatQuestions.convertTxtToJsonPath(path);
+                Question[] perguntas = Utils.FormatQuestions.readQuestions(jsonPath);
+                System.out.println(perguntas.length + " questions were loaded from: " + jsonPath);
+                System.out.println("First question: " + perguntas[0].getQuestionText());
+                System.out.println("Last question: " + perguntas[perguntas.length - 1].getQuestionText());
                 game.setQuestions(perguntas);
                 System.out.println("Loaded " + perguntas.length + " questions.");
             }

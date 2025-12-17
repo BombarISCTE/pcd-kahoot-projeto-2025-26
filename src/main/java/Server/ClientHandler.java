@@ -80,7 +80,7 @@ public class ClientHandler extends Thread {
 
         Team team = gameState.getTeam(connect.teamId());
         if (team == null) {
-            gameState.addTeam(connect.teamId(), "Team " + connect.teamId());
+            gameState.addTeam(connect.teamId());
             team = gameState.getTeam(connect.teamId());
         }
 
